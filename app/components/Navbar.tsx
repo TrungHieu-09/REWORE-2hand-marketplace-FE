@@ -23,8 +23,9 @@ export default function Navbar() {
           <a href="/wishlist">Wishlist</a>
         </div>
         <div className="nav-actions">
-          <a href="/login" className="btn-ghost">Log in</a>
-          <a href="/register" className="btn-primary" id="nav-signup">Sign up</a>
+          <a href="/profile" className="flex items-center justify-center w-10 h-10 rounded-full bg-[#feeadc] text-[#974226] hover:bg-[#f8e5d6] transition-colors" title="My Profile">
+            <span className="material-symbols-outlined text-[20px]">person</span>
+          </a>
         </div>
         <button
           className="mobile-menu-toggle"
@@ -41,8 +42,10 @@ export default function Navbar() {
         <a href="/auctions" onClick={() => setMobileOpen(false)}>Auctions</a>
         <a href="/wishlist" onClick={() => setMobileOpen(false)}>Wishlist</a>
         <hr />
-        <a href="/login">Log in</a>
-        <a href="/register" className="btn-primary" style={{ textAlign: "center", marginTop: 8 }}>Sign up</a>
+        <a href="/profile" className="flex items-center gap-2 text-[#974226]">
+          <span className="material-symbols-outlined text-[20px]">person</span>
+          My Profile
+        </a>
       </div>
     </nav>
   );
