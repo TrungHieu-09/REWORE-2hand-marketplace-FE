@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Navbar from "@/app/components/Navbar";
+import AuthGuard from "@/app/components/AuthGuard";
 
 export const metadata: Metadata = {
   title: "Auctions — REWORE",
@@ -13,9 +14,9 @@ export default function AuctionsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <AuthGuard>
       <Navbar />
       {children}
-    </>
+    </AuthGuard>
   );
 }
