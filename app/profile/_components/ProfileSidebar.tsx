@@ -2,45 +2,39 @@
 
 export type ProfileTab = "overview" | "bids" | "orders" | "settings";
 
-interface ProfileSidebarProps {
+interface ProfileTabNavProps {
   activeTab: ProfileTab;
   onTabChange: (tab: ProfileTab) => void;
 }
 
-export default function ProfileSidebar({ activeTab, onTabChange }: ProfileSidebarProps) {
-  const tabs: { id: ProfileTab; label: string; icon: string }[] = [
-    { id: "overview", label: "Overview", icon: "dashboard" },
-    { id: "bids", label: "My Bids", icon: "gavel" },
-    { id: "orders", label: "Orders & Returns", icon: "shopping_bag" },
-    { id: "settings", label: "Account Settings", icon: "settings" },
+export default function ProfileTabNav({ activeTab, onTabChange }: ProfileTabNavProps) {
+  const tabs: { id: ProfileTab; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "bids", label: "My Bids" },
+    { id: "orders", label: "Orders & Returns" },
+    { id: "settings", label: "Account Settings" },
   ];
 
   return (
-    <aside className="w-full md:w-64 flex-shrink-0">
-      <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0 md:sticky md:top-24 scrollbar-hide">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`
-                flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 whitespace-nowrap
-                ${
-                  isActive
-                    ? "bg-[#b65a3c] text-white shadow-md shadow-[#b65a3c]/30"
-                    : "text-[#55443d] hover:bg-[#feeadc] hover:text-[#974226]"
-                }
-              `}
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                {tab.icon}
-              </span>
-              {tab.label}
-            </button>
-          );
-        })}
-      </nav>
-    </aside>
+    <div className="flex overflow-x-auto border-b border-[#dbc1b9]/40 hide-scrollbar">
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`
+              pb-3 px-1 mr-8 text-[13px] font-semibold tracking-wide whitespace-nowrap transition-all duration-200 border-b-2 -mb-px
+              ${isActive
+                ? "border-[#974226] text-[#974226]"
+                : "border-transparent text-[#55443d] hover:text-[#231a11]"
+              }
+            `}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
