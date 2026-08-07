@@ -7,9 +7,6 @@ export default function TabSettings() {
         <h3 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[#231a11] mb-1">
           Account Settings
         </h3>
-        <p className="text-sm text-[#88726c]">
-          Update your personal information and preferences.
-        </p>
       </div>
 
       <div className="bg-white rounded-[20px] shadow-[0_4px_24px_-4px_rgba(43,33,24,0.06)] border border-[#f2dfd1] p-6 sm:p-8">

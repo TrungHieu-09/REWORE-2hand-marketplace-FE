@@ -15,9 +15,6 @@ export default function TabMyBids() {
           <h3 className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[#231a11] mb-1">
             My Bids
           </h3>
-          <p className="text-sm text-[#88726c]">
-            Track your active auctions and bidding history.
-          </p>
         </div>
       </div>
 
