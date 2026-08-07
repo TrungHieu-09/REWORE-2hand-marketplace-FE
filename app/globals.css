@@ -1828,7 +1828,7 @@ a {
   margin: 0 auto;
   padding: 32px 24px 0;
   display: grid;
-  grid-template-columns: 230px 1fr 256px;
+  grid-template-columns: 260px 1fr 256px;
   gap: 24px;
   align-items: start;
 }
@@ -1974,6 +1974,8 @@ a {
 .sp-price-inputs { display: flex; align-items: center; gap: 8px; }
 .sp-price-input {
   flex: 1;
+  min-width: 0;
+  width: 0;
   height: 36px;
   border: 1.5px solid #dbc1b9;
   border-radius: 10px;
@@ -1986,7 +1988,7 @@ a {
   transition: border-color var(--transition);
 }
 .sp-price-input:focus { border-color: var(--on-surface); }
-.sp-price-sep { font-size: 14px; color: var(--on-surface-variant); }
+.sp-price-sep { font-size: 14px; color: var(--on-surface-variant); flex-shrink: 0; }
 
 /* ── Main ── */
 .sp-main { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
