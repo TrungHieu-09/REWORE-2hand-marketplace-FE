@@ -21,8 +21,9 @@ export default function LoginPage() {
     setLoading(true);
     // Simulated auth — replace with real API call
     setTimeout(() => {
+      localStorage.setItem("rewore_authed", "true");
       setLoading(false);
-      router.push("/");
+      router.push("/shop");
     }, 1200);
   };
 

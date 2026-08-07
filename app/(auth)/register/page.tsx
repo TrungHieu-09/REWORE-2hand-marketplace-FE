@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { useState } from "react";
@@ -26,8 +26,9 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     setTimeout(() => {
+      localStorage.setItem("rewore_authed", "true");
       setLoading(false);
-      router.push("/");
+      router.push("/shop");
     }, 1400);
   };
 
