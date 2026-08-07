@@ -19,7 +19,7 @@ export default function Navbar() {
         <div className="nav-links">
           <a href="/shop">Shop</a>
           <a href="/#how-it-works">How it Works</a>
-          <a href="/#drops">Auctions</a>
+          <a href="/auctions">Auctions</a>
           <a href="/wishlist">Wishlist</a>
         </div>
         <div className="nav-actions">
@@ -38,7 +38,7 @@ export default function Navbar() {
       <div className={`mobile-menu${mobileOpen ? " open" : ""}`} id="mobile-menu">
         <a href="/shop" onClick={() => setMobileOpen(false)}>Shop</a>
         <a href="/#how-it-works" onClick={() => setMobileOpen(false)}>How it Works</a>
-        <a href="/#drops" onClick={() => setMobileOpen(false)}>Auctions</a>
+        <a href="/auctions" onClick={() => setMobileOpen(false)}>Auctions</a>
         <a href="/wishlist" onClick={() => setMobileOpen(false)}>Wishlist</a>
         <hr />
         <a href="/login">Log in</a>
