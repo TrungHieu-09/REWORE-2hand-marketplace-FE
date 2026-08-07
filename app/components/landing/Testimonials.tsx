@@ -1,3 +1,8 @@
+"use client";
+
+import "./Testimonials.css";
+import { useEffect } from "react";
+
 export default function Testimonials() {
   const reviews = [
     {
@@ -19,6 +24,31 @@ export default function Testimonials() {
       name: "Minh Khoa", meta: "Buyer · Da Nang",
     },
   ];
+
+  useEffect(() => {
+    const cards = document.querySelectorAll(".testimonial-card");
+    // Fallback: show all after 300ms in case observer doesn't fire
+    const fallback = setTimeout(() => {
+      cards.forEach((c) => c.classList.add("visible"));
+    }, 300);
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const siblings = [...(entry.target.parentElement?.children ?? [])];
+            const idx = siblings.indexOf(entry.target as Element);
+            (entry.target as HTMLElement).style.transitionDelay = `${idx * 100}ms`;
+            entry.target.classList.add("visible");
+            obs.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
+    cards.forEach((c) => obs.observe(c));
+    return () => { obs.disconnect(); clearTimeout(fallback); };
+  }, []);
 
   return (
     <section className="section" id="testimonials">

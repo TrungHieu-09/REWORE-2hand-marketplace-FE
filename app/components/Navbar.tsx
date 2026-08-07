@@ -22,9 +22,9 @@ export default function Navbar() {
         <div className="nav-links">
           {/* Always visible for all users */}
           <a href="/#how-it-works">How it Works</a>
-          <a href={isLoggedIn ? "/shop" : "/#how-it-works"}>Shop</a>
-          <a href={isLoggedIn ? "/auctions" : "/#how-it-works"}>Auctions</a>
-          <a href={isLoggedIn ? "/wishlist" : "/#how-it-works"}>Wishlist</a>
+          <a href={isLoggedIn ? "/shop" : "/#drops"}>Shop</a>
+          <a href={isLoggedIn ? "/auctions" : "/#trust"}>Auctions</a>
+          <a href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"}>Wishlist</a>
         </div>
 
         <div className="nav-actions">
@@ -78,9 +78,9 @@ export default function Navbar() {
       {/* Mobile menu */}
       <div className={`mobile-menu${mobileOpen ? " open" : ""}`} id="mobile-menu">
         <a href="/#how-it-works" onClick={() => setMobileOpen(false)}>How it Works</a>
-        <a href={isLoggedIn ? "/shop" : "/#how-it-works"} onClick={() => setMobileOpen(false)}>Shop</a>
-        <a href={isLoggedIn ? "/auctions" : "/#how-it-works"} onClick={() => setMobileOpen(false)}>Auctions</a>
-        <a href={isLoggedIn ? "/wishlist" : "/#how-it-works"} onClick={() => setMobileOpen(false)}>Wishlist</a>
+        <a href={isLoggedIn ? "/shop" : "/#drops"} onClick={() => setMobileOpen(false)}>Shop</a>
+        <a href={isLoggedIn ? "/auctions" : "/#trust"} onClick={() => setMobileOpen(false)}>Auctions</a>
+        <a href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"} onClick={() => setMobileOpen(false)}>Wishlist</a>
 
         {isLoggedIn ? (
           <>
