@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Manrope } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
+import { SellerProvider } from "./context/SellerContext";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -36,7 +37,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <SellerProvider>{children}</SellerProvider>
+        </AuthProvider>
       </body>
     </html>
   );
