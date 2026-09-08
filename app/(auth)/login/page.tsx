@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../../context/AuthContext";
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,19 +14,37 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) { setError("Please enter your email."); return; }
     if (!password) { setError("Please enter your password."); return; }
     setError("");
     setLoading(true);
-    // Simulated auth — replace with real API call
-    setTimeout(() => {
-      localStorage.setItem("rewore_authed", "true");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.message || "Email hoặc mật khẩu không đúng.");
+        setLoading(false);
+        return;
+      }
+      login(data.token, data.user);
+      // Redirect based on role
+      if (data.user.role === "SELLER" || data.user.role === "ADMIN") {
+        router.push("/seller/dashboard");
+      } else {
+        router.push("/shop");
+      }
+    } catch {
+      setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
       setLoading(false);
-      router.push("/shop");
-    }, 1200);
+    }
   };
 
   return (

@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>REWORE — Shop Owner Console</title>
+<!-- Google Fonts: Playfair Display & Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-on-surface": "#ffeee1",
+            "outline-variant": "#dbc1b9",
+            "on-secondary-container": "#6b6357",
+            "tertiary": "#556138",
+            "on-error-container": "#93000a",
+            "primary-container": "#b65a3c",
+            "on-primary-container": "#fffbff",
+            "primary-fixed-dim": "#ffb59e",
+            "error": "#ba1a1a",
+            "primary": "#974226",
+            "background": "#fff8f5",
+            "secondary-fixed": "#ede1d2",
+            "on-surface-variant": "#55433d",
+            "on-surface": "#231a11",
+            "surface": "#fff8f5",
+            "surface-tint": "#9a4529",
+            "surface-dim": "#e9d7c8",
+            "surface-container-highest": "#f2dfd1",
+            "on-secondary-fixed-variant": "#4d463b",
+            "surface-variant": "#f2dfd1",
+            "on-tertiary": "#ffffff",
+            "on-primary": "#ffffff",
+            "surface-container-low": "#fff1e8",
+            "primary-fixed": "#ffdbd0",
+            "inverse-primary": "#ffb59e",
+            "tertiary-fixed": "#dae9b5",
+            "secondary-container": "#ede1d2",
+            "on-error": "#ffffff",
+            "surface-container-high": "#f8e5d6",
+            "on-background": "#231a11",
+            "surface-bright": "#fff8f5",
+            "on-tertiary-fixed-variant": "#3f4b25",
+            "error-container": "#ffdad6",
+            "on-tertiary-container": "#fcffeb",
+            "tertiary-container": "#6d7a4f",
+            "outline": "#88726c",
+            "secondary": "#655d52",
+            "on-tertiary-fixed": "#151f01",
+            "on-primary-fixed": "#3a0b00",
+            "tertiary-fixed-dim": "#becc9b",
+            "surface-container": "#feeadc",
+            "on-primary-fixed-variant": "#7b2e14",
+            "surface-container-lowest": "#ffffff",
+            "inverse-surface": "#392e25",
+            "secondary-fixed-dim": "#d0c5b7",
+            "on-secondary": "#ffffff",
+            "on-secondary-fixed": "#201b12"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "24px",
+            "margin_mobile": "20px",
+            "margin_desktop": "48px",
+            "max_width": "1280px",
+            "unit": "4px"
+          },
+          "fontFamily": {
+            "display-lg-mobile": ["Playfair Display", "serif"],
+            "body-lg": ["Manrope", "sans-serif"],
+            "body-md": ["Manrope", "sans-serif"],
+            "display-lg": ["Playfair Display", "serif"],
+            "label-sm": ["Manrope", "sans-serif"],
+            "headline-md": ["Playfair Display", "serif"],
+            "label-md": ["Manrope", "sans-serif"],
+            "headline-lg": ["Playfair Display", "serif"]
+          },
+          "fontSize": {
+            "display-lg-mobile": ["36px", { "lineHeight": "1.2", "fontWeight": "700" }],
+            "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+            "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+            "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "500" }],
+            "headline-md": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }],
+            "label-md": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+            "headline-lg": ["32px", { "lineHeight": "1.3", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      vertical-align: middle;
+      font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Subtle editorial paper texture overlay */
+    .paper-texture {
+      background-image: radial-gradient(rgba(35, 26, 17, 0.04) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen paper-texture flex flex-col">
+<!-- ==================== SHARED COMPONENT: SideNavBar ==================== -->
+<aside class="w-64 h-screen fixed left-0 top-0 bg-surface-container-low dark:bg-surface-dim shadow-sm dark:shadow-none z-50 flex flex-col justify-between border-r border-outline-variant/30">
+<!-- Brand Header -->
+<div>
+<div class="px-6 py-5 flex items-center gap-3 border-b border-secondary-container/50">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm">
+<span class="font-headline-md text-headline-md tracking-tighter">R</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-md font-headline-md text-primary dark:text-primary-fixed-dim tracking-tight">REWORE</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Shop Owner Console</span>
+</div>
+</div>
+<!-- Quick Seller Profile Snippet in Sidebar -->
+<div class="px-5 py-4 mx-3 my-3 bg-secondary-container/40 rounded-xl flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover border border-outline-variant/40" data-alt="High-end fashion boutique studio avatar with soft warm linen lighting and minimalist ceramic aesthetic representing Old Soul Studio brand" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyjY0BHqI4Jtmnqf_BKdljfjj0GHv9OSOSpxRACKY9SBxFOb2Ok4AAaZvDy8_pUO795e-4H8-M58PrJOGrMFHQSPK-QdE_CMRjnFGalkYBr1JuLDDpmZCHUiyq349JFF6IVUD-Sr2TElMgghBdmTAhA3ZcDGjbjYe41btuzdE5GUvjcejpX59-Ak432YkP-CFnS8sE8R7bvIhpNRdhqp1BfwS_iDiW1WUBvhgB54fcpIPgYxNuBp7X"/>
+<div class="overflow-hidden">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md text-on-surface truncate">Old Soul Studio</span>
+<span class="material-symbols-outlined text-primary text-[14px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<span class="text-[11px] font-label-sm text-tertiary font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Verified Merchant
+          </span>
+</div>
+</div>
+<!-- Primary Action CTA inside Nav -->
+<div class="px-4 mb-2">
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all duration-150">
+<span class="material-symbols-outlined text-[18px]">add</span>
+          List New Item
+        </button>
+</div>
+<!-- Navigation Links -->
+<nav class="mt-3 flex flex-col space-y-0.5">
+<!-- Dashboard (Active) -->
+<a class="flex items-center gap-3 px-6 py-3 text-label-md font-label-md text-primary dark:text-primary-fixed-dim font-bold border-r-4 border-primary dark:border-primary-fixed-dim bg-primary/5 transition-all" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Inventory / Listings -->
+<a class="flex items-center gap-3 px-6 py-3 text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Inventory</span>
+</a>
+<!-- Drops -->
+<a class="flex items-center gap-3 px-6 py-3 text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span>Drops</span>
+<span class="ml-auto text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-surface-container text-primary">Live</span>
+</a>
+<!-- Auctions -->
+<a class="flex items-center gap-3 px-6 py-3 text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span>Auctions</span>
+<span class="ml-auto w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</a>
+<!-- Reservations -->
+<a class="flex items-center gap-3 px-6 py-3 text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">book_online</span>
+<span>Reservations</span>
+<span class="ml-auto text-xs px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-semibold">6</span>
+</a>
+<!-- Reports -->
+<a class="flex items-center gap-3 px-6 py-3 text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">description</span>
+<span>Reports</span>
+</a>
+<!-- Analytics -->
+<a class="flex items-center gap-3 px-6 py-3 text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span>Analytics</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center gap-3 px-6 py-3 text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer Store Status -->
+<div class="p-4 m-3 rounded-xl bg-surface border border-outline-variant/30">
+<div class="flex items-center justify-between mb-1.5">
+<span class="text-label-sm font-label-sm text-on-surface-variant">Store Status</span>
+<span class="flex items-center gap-1.5 text-xs font-semibold text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span> Live
+        </span>
+</div>
+<a class="inline-flex items-center gap-1 text-label-sm font-label-sm text-primary hover:underline font-semibold" href="#">
+        View Public Storefront
+        <span class="material-symbols-outlined text-[14px]">north_east</span>
+</a>
+</div>
+</aside>
+<!-- ==================== SHARED COMPONENT: TopAppBar ==================== -->
+<header class="docked full-width top-0 sticky z-40 bg-surface dark:bg-surface-dim border-b border-outline-variant/30 flex justify-between items-center h-16 px-gutter ml-64 w-[calc(100%-16rem)]">
+<!-- Left: Search Input -->
+<div class="flex items-center gap-3 w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest rounded-full border border-outline-variant/50 text-body-md font-body-md placeholder:text-outline text-on-surface focus:outline-none focus:ring-1 focus:ring-on-surface focus:border-on-surface text-sm transition-all shadow-xs" placeholder="Search orders, listings, buyers..." type="text"/>
+</div>
+</div>
+<!-- Right: Trailing Actions -->
+<div class="flex items-center gap-3">
+<!-- Notification Icon -->
+<button class="relative p-2.5 rounded-full hover:bg-surface-variant/50 transition-all text-on-surface-variant hover:text-on-surface" title="Notifications">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary"></span>
+</button>
+<!-- Messages Icon with unread badge -->
+<button class="relative p-2.5 rounded-full hover:bg-surface-variant/50 transition-all text-on-surface-variant hover:text-on-surface" title="Messages">
+<span class="material-symbols-outlined">chat</span>
+<span class="absolute -top-0.5 -right-0.5 bg-primary text-on-primary text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">3</span>
+</button>
+<div class="h-6 w-px bg-outline-variant/40 mx-1"></div>
+<!-- Account Profile Button -->
+<button class="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full hover:bg-surface-variant/50 transition-all">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Portrait of an artisanal vintage fashion boutique owner dressed in curated earth-toned tailored archival garments in a warmly lit showroom" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBY6eFAeKt47FkV8RET1nsI03ioy8bTFNyibaHkSohjAnesa91aU93ISvuiiWpbEuZAsxtJ9HUVFh7A1nneOcEzawd4wnEqjNdq7cW37zqJuwAoPKrgm7HPLXrDvFCMZDs1YTZzTmm-LlDLNEVEYOdjH5zCdCgjUTDuIgKc57JRTNQQ4W1_0w7iT5jnb3bZTpVVPG9paRrWC3G0_siodkzowDd6EdhkdoR3W1zaglgByCZXlK-YWBi"/>
+<div class="text-left hidden sm:block">
+<span class="block text-label-md font-label-md text-on-surface leading-tight">Old Soul Studio</span>
+<span class="block text-[11px] font-label-sm text-outline leading-tight">Consignment Pro</span>
+</div>
+<span class="material-symbols-outlined text-outline text-sm">expand_more</span>
+</button>
+</div>
+</header>
+<!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+<main class="ml-64 p-8 w-[calc(100%-16rem)] max-w-[1400px]">
+<!-- Top Welcome Banner & Action Header -->
+<section class="flex flex-col md:flex-row md:items-center justify-between pb-8 gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-label-sm font-label-sm text-primary font-bold uppercase tracking-widest">Store Overview</span>
+<span class="text-outline-variant">•</span>
+<span class="text-label-sm font-label-sm text-secondary">Wednesday, October 24, 2024</span>
+</div>
+<h1 class="text-headline-lg font-headline-lg text-on-surface">Welcome back, Old Soul Studio</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-0.5">All systems running smoothly · 4 customer inquiries await response</p>
+</div>
+<!-- Quick Action Buttons -->
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-primary hover:bg-surface-container font-label-md text-label-md transition-all">
+<span class="material-symbols-outlined text-[18px]">gavel</span>
+          + Start Auction
+        </button>
+<button class="flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-all">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+          + New Listing
+        </button>
+</div>
+</section>
+<!-- Stat Metric Cards (Row of 4) -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+<!-- Card 1: Total Sales -->
+<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/30 shadow-[0_4px_24px_-4px_rgba(43,33,24,0.06)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-md font-label-md text-on-surface-variant">Total Sales (₫)</span>
+<span class="p-2 rounded-xl bg-surface-container-low text-primary">
+<span class="material-symbols-outlined">payments</span>
+</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">₫42,850,000</div>
+<div class="flex items-center gap-1.5 mt-2">
+<span class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full bg-tertiary-fixed text-tertiary">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+              +18.4%
+            </span>
+<span class="text-label-sm font-label-sm text-secondary">vs last month</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Active Listings -->
+<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/30 shadow-[0_4px_24px_-4px_rgba(43,33,24,0.06)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-md font-label-md text-on-surface-variant">Active Listings</span>
+<span class="p-2 rounded-xl bg-surface-container-low text-primary">
+<span class="material-symbols-outlined">checkroom</span>
+</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">38 items</div>
+<div class="flex items-center gap-1.5 mt-2">
+<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container">
+              4 pending review
+            </span>
+<span class="text-label-sm font-label-sm text-secondary">in moderation</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Pending Reservations -->
+<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/30 shadow-[0_4px_24px_-4px_rgba(43,33,24,0.06)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-md font-label-md text-on-surface-variant">Pending Reservations</span>
+<span class="p-2 rounded-xl bg-surface-container-low text-primary">
+<span class="material-symbols-outlined">lock_clock</span>
+</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">6 active holds</div>
+<div class="flex items-center gap-1.5 mt-2">
+<span class="text-label-sm font-label-sm text-primary font-semibold">₫5,200,000</span>
+<span class="text-label-sm font-label-sm text-secondary">value committed</span>
+</div>
+</div>
+</div>
+<!-- Card 4: Items in Draft -->
+<div class="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/30 shadow-[0_4px_24px_-4px_rgba(43,33,24,0.06)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-md font-label-md text-on-surface-variant">Items in Draft</span>
+<span class="p-2 rounded-xl bg-surface-container-low text-primary">
+<span class="material-symbols-outlined">edit_document</span>
+</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">5 drafts</div>
+<div class="flex items-center gap-1.5 mt-2">
+<span class="text-label-sm font-label-sm text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">bolt</span> Ready to publish
+            </span>
+</div>
+</div>
+</div>
+</section>
+<!-- Two Column Mid Section: Table (65%) & Highlights/Alerts (35%) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- LEFT COLUMN: Recent Orders Table (approx 65% = 8 cols) -->
+<section class="lg:col-span-8 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-[0_4px_24px_-4px_rgba(43,33,24,0.06)] overflow-hidden">
+<!-- Table Card Header -->
+<div class="p-6 pb-4 border-b border-secondary-container/60 flex items-center justify-between">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface">Recent Orders</h2>
+<p class="text-label-sm font-label-sm text-secondary mt-0.5">Purchases and fulfillment updates from verified community members</p>
+</div>
+<a class="inline-flex items-center gap-1 text-label-md font-label-md text-primary font-semibold hover:underline" href="#">
+            View All Orders
+            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<!-- Orders Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant/20 bg-surface-container-low/40">
+<th class="py-3 px-6 text-label-sm font-label-sm text-secondary uppercase tracking-wider">Item Details</th>
+<th class="py-3 px-4 text-label-sm font-label-sm text-secondary uppercase tracking-wider">Buyer</th>
+<th class="py-3 px-4 text-label-sm font-label-sm text-secondary uppercase tracking-wider">Amount</th>
+<th class="py-3 px-4 text-label-sm font-label-sm text-secondary uppercase tracking-wider">Status</th>
+<th class="py-3 px-4 text-label-sm font-label-sm text-secondary uppercase tracking-wider">Date</th>
+<th class="py-3 px-6 text-right text-label-sm font-label-sm text-secondary uppercase tracking-wider">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20">
+<!-- Order Row 1 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<img class="w-12 h-14 rounded-lg object-cover border border-outline-variant/40" data-alt="Vintage 1970s Yves Saint Laurent trench coat in pristine beige gabardine cotton styled on a minimalist wooden hanger in an upscale boutique" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCo20iI3z0wzvqZ2nb1JuEWLObIfcJTJMpIqVOVnys9Ca8E0gDbznUmANqURWUPvZLz5xosm07X8qVTF5u5M0aHBSLJhNdjbTl9LJO_n0EDMxThXnwwA-LTNF8yChdWr_ow2MW1LtZZ8_MqO6TYWPmRDFB--w6-ol9enm7ke1FhLjDkwOGltmetYdDKQN-n2dXEnInjL_BdQgxZG2PZ67KSNTUwuW3kfsGcezn9GhELuyo_nSS3Ibkw"/>
+<div>
+<div class="font-headline-md text-base text-on-surface line-clamp-1">1970s Yves Saint Laurent Trench Coat</div>
+<span class="text-label-sm font-label-sm text-secondary">Size: 40 EU · Vintage A+</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center font-bold text-xs text-on-secondary-container">ER</div>
+<div>
+<span class="font-label-md text-label-md text-on-surface block">Elena Rossi</span>
+<span class="text-[11px] font-label-sm text-tertiary">Verified Buyer</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-headline-md text-base text-on-surface whitespace-nowrap">
+                  ₫8,500,000
+                </td>
+<td class="py-4 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-tertiary-fixed text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Paid
+                  </span>
+</td>
+<td class="py-4 px-4 text-label-sm font-label-sm text-secondary whitespace-nowrap">
+                  2 hrs ago
+                </td>
+<td class="py-4 px-6 text-right whitespace-nowrap">
+<button class="px-3 py-1.5 text-label-sm font-label-sm rounded-lg border border-outline-variant/60 text-on-surface hover:bg-surface-container transition-all">
+                    Fulfill
+                  </button>
+</td>
+</tr>
+<!-- Order Row 2 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<img class="w-12 h-14 rounded-lg object-cover border border-outline-variant/40" data-alt="Curated vintage Celine silk twill equestrian motif scarf carefully folded in a luxury archival dust pouch with soft natural ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbye34X0MxVU536bleQ_QU0YceFi-yfHioOcu9GqGo5oXYtsg0UQBBFoqNE-lo-Kxz2tgckacwBRQX3LM-Uq8Hj7K6mcmh8UEH4DHuwVt98wjCbsLWIaHg8ApkDefqWu4U1UaCv-QpRcIQvblzCgQ5YQTjX1JAm0UJnT5a9W__JUFnqLK5vXKzrotU_n4L7UCm8pqg4LWOz15GuyAxtUpSHzP_92xoGbzlaRI0jM_ywCYwHMgqMw2j"/>
+<div>
+<div class="font-headline-md text-base text-on-surface line-clamp-1">Vintage Celine Silk Scarf</div>
+<span class="text-label-sm font-label-sm text-secondary">90x90cm · Pure Silk</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center font-bold text-xs text-on-secondary-container">MV</div>
+<div>
+<span class="font-label-md text-label-md text-on-surface block">Marcus Vance</span>
+<span class="text-[11px] font-label-sm text-tertiary">Verified Buyer</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-headline-md text-base text-on-surface whitespace-nowrap">
+                  ₫3,200,000
+                </td>
+<td class="py-4 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-fixed text-primary">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Shipped
+                  </span>
+</td>
+<td class="py-4 px-4 text-label-sm font-label-sm text-secondary whitespace-nowrap">
+                  Today, 11:30 AM
+                </td>
+<td class="py-4 px-6 text-right whitespace-nowrap">
+<button class="px-3 py-1.5 text-label-sm font-label-sm rounded-lg border border-outline-variant/60 text-on-surface hover:bg-surface-container transition-all">
+                    Track
+                  </button>
+</td>
+</tr>
+<!-- Order Row 3 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<img class="w-12 h-14 rounded-lg object-cover border border-outline-variant/40" data-alt="Classic vintage 1990s Schott Perfecto heavyweight black leather biker jacket with aged brass zippers displayed on weathered concrete background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5kdDqMVmOajlC090FvhCwniCWzwOInqM1qt3uh1lW8t-Iw9fTzPTW5tEfP8dr8a4jGBIB2lH0Ize-vBDDr89pQdPUEU2kSJ2EBZnaTIe7NXAO-gPDpwfDaiKBtS4due_Bu6mvmbf59FJSMacokZpfVkeAVC_8mmpNvxlT9JJ_iagf84ZmKUBBO3Ew1atldGEoA02MgirftWR0zTpuaVt1UQ5AjXv3NV4bboFJwm1iIQ-x5eSpCWlW"/>
+<div>
+<div class="font-headline-md text-base text-on-surface line-clamp-1">1990s Schott Perfecto Leather</div>
+<span class="text-label-sm font-label-sm text-secondary">Size: 42 US · Distressed Steerhide</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center font-bold text-xs text-on-secondary-container">CD</div>
+<div>
+<span class="font-label-md text-label-md text-on-surface block">Chloe Dupont</span>
+<span class="text-[11px] font-label-sm text-secondary">Pro Collector</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-headline-md text-base text-on-surface whitespace-nowrap">
+                  ₫14,000,000
+                </td>
+<td class="py-4 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Pending Payout
+                  </span>
+</td>
+<td class="py-4 px-4 text-label-sm font-label-sm text-secondary whitespace-nowrap">
+                  Yesterday
+                </td>
+<td class="py-4 px-6 text-right whitespace-nowrap">
+<button class="px-3 py-1.5 text-label-sm font-label-sm rounded-lg border border-outline-variant/60 text-on-surface hover:bg-surface-container transition-all">
+                    Manage
+                  </button>
+</td>
+</tr>
+<!-- Order Row 4 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<img class="w-12 h-14 rounded-lg object-cover border border-outline-variant/40" data-alt="Iconic Maison Margiela black split-toe leather Tabi ankle boots placed on clean ivory plinth in high-end editorial gallery setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmWrOQth7p3Jy2nJ8TH_fMPSlE3JCfXittttoAb69WkJZk_N_pvdQyqYoKyZMdUMTfsWBYG2iyCseE8KqgTQ2Sp_ka9_FHSpa8ZmMK786ZT1ryUGYVXBBEE785xhMHzXmG_Zt-IXOnwSUk3OMrvSAEYrKgSgS6Pq5meyQl_0kkC3DbGWAOBAhH9V7k7EfcAvwejMgMR-kMbPkfwYuHhvk3EUcZvubskSvwM0T5I8yuEl2fh6Pa0XyE"/>
+<div>
+<div class="font-headline-md text-base text-on-surface line-clamp-1">Maison Margiela Tabi Boots</div>
+<span class="text-label-sm font-label-sm text-secondary">Size: 38 IT · Original Box Included</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center font-bold text-xs text-on-secondary-container">JT</div>
+<div>
+<span class="font-label-md text-label-md text-on-surface block">Julian Tran</span>
+<span class="text-[11px] font-label-sm text-tertiary">Verified Buyer</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 font-headline-md text-base text-on-surface whitespace-nowrap">
+                  ₫9,800,000
+                </td>
+<td class="py-4 px-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-tertiary-fixed text-tertiary">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Paid
+                  </span>
+</td>
+<td class="py-4 px-4 text-label-sm font-label-sm text-secondary whitespace-nowrap">
+                  Oct 22
+                </td>
+<td class="py-4 px-6 text-right whitespace-nowrap">
+<button class="px-3 py-1.5 text-label-sm font-label-sm rounded-lg border border-outline-variant/60 text-on-surface hover:bg-surface-container transition-all">
+                    Fulfill
+                  </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 bg-surface-container-low/20 border-t border-secondary-container/40 flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-secondary">Showing 4 of 28 recent orders this month</span>
+<div class="flex gap-2">
+<button class="p-1 rounded border border-outline-variant/40 text-secondary hover:bg-surface-container"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="p-1 rounded border border-outline-variant/40 text-secondary hover:bg-surface-container"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</section>
+<!-- RIGHT COLUMN: Score Ring Card & Attention Alerts (approx 35% = 4 cols) -->
+<section class="lg:col-span-4 space-y-6">
+<!-- Card 1: Seller Trust Score Gauge -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/30 shadow-[0_4px_24px_-4px_rgba(43,33,24,0.06)]">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-headline-md text-lg text-on-surface">Seller Score &amp; Perks</h3>
+<span class="text-xs px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-bold">Tier III</span>
+</div>
+<div class="flex flex-col items-center justify-center my-3">
+<!-- Circular SVG Ring Gauge matching exact buyer score ring style -->
+<div class="relative w-40 h-40 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 120 120">
+<!-- Background track circle -->
+<circle cx="60" cy="60" fill="transparent" r="50" stroke="#ede1d2" stroke-linecap="round" stroke-width="8"></circle>
+<!-- Score Arc (78% filled) -->
+<circle cx="60" cy="60" fill="transparent" r="50" stroke="#974226" stroke-dasharray="314.159" stroke-dashoffset="69.11" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<!-- Center Metric -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="font-headline-lg text-display-lg-mobile text-on-surface font-bold leading-none">78</span>
+<span class="text-[10px] font-label-md tracking-wider uppercase text-primary font-bold mt-1">SELLER SCORE</span>
+<span class="text-[9px] text-tertiary font-semibold">VERIFIED PRO</span>
+</div>
+</div>
+<span class="text-label-sm font-label-sm text-secondary mt-2">78 / 100 points earned</span>
+</div>
+<!-- Tier Progress Info -->
+<div class="bg-surface-container-low p-3.5 rounded-xl border border-secondary-container/80 mb-4">
+<div class="flex items-center justify-between text-label-sm font-label-sm mb-1">
+<span class="text-on-surface font-semibold">Next Tier Perk</span>
+<span class="text-primary font-bold">12 pts needed</span>
+</div>
+<p class="text-[13px] text-on-surface-variant leading-relaxed">
+              Unlocked: <span class="font-medium text-on-surface">Live Auctions</span> (75 required) · 12 points to <span class="font-medium text-primary">Premier Drop Access</span> (90 required).
+            </p>
+</div>
+<!-- Trust KPIs -->
+<div class="grid grid-cols-2 gap-2 text-center pt-2 border-t border-outline-variant/20">
+<div class="p-2">
+<span class="block text-headline-md text-base text-tertiary font-bold">0.0%</span>
+<span class="text-[11px] font-label-sm text-secondary">Dispute Rate</span>
+</div>
+<div class="p-2 border-l border-outline-variant/20">
+<span class="block text-headline-md text-base text-primary font-bold">99.2%</span>
+<span class="text-[11px] font-label-sm text-secondary">On-Time Dispatch</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Low Stock / Urgent Attention Alert Card -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/30 shadow-[0_4px_24px_-4px_rgba(43,33,24,0.06)]">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="p-1 rounded-md bg-error-container text-error">
+<span class="material-symbols-outlined text-[18px]">emergency_home</span>
+</span>
+<h3 class="font-headline-md text-lg text-on-surface">Urgent Attention</h3>
+</div>
+<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-error/10 text-error">3 Action Items</span>
+</div>
+<div class="space-y-4">
+<!-- Alert Item 1: Live Auction Ending -->
+<div class="p-3.5 rounded-xl bg-surface-container-low/60 border border-outline-variant/30 flex flex-col gap-2">
+<div class="flex items-start justify-between">
+<div>
+<h4 class="font-label-md text-label-md text-on-surface line-clamp-1 font-semibold">Vintage Chanel Quilted Flap Bag</h4>
+<p class="text-[12px] text-primary font-bold flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">timer</span> Auction ending in 42 mins
+                  </p>
+</div>
+<span class="font-headline-md text-sm text-on-surface">₫28,500,000</span>
+</div>
+<div class="flex items-center justify-between text-[12px] pt-1 text-secondary">
+<span>14 bids placed · Reserve Met</span>
+<a class="text-primary font-semibold hover:underline flex items-center gap-0.5" href="#">
+                  View Auction <span class="material-symbols-outlined text-[12px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Alert Item 2: Low Stock Alert -->
+<div class="p-3.5 rounded-xl bg-surface-container-low/60 border border-outline-variant/30 flex flex-col gap-2">
+<div class="flex items-start justify-between">
+<div>
+<h4 class="font-label-md text-label-md text-on-surface line-clamp-1 font-semibold">Burberry Heritage Trench (Beige)</h4>
+<p class="text-[12px] text-error font-medium flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">production_quantity_limits</span> Only 1 remaining in stock
+                  </p>
+</div>
+<span class="text-[11px] px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-semibold">High Demand</span>
+</div>
+<div class="flex items-center justify-between text-[12px] pt-1 text-secondary">
+<span>3 buyers have item in cart</span>
+<a class="text-primary font-semibold hover:underline flex items-center gap-0.5" href="#">
+                  Restock / Edit <span class="material-symbols-outlined text-[12px]">edit</span>
+</a>
+</div>
+</div>
+<!-- Alert Item 3: Reservation Hold Expiring -->
+<div class="p-3.5 rounded-xl bg-surface-container-low/60 border border-outline-variant/30 flex flex-col gap-2">
+<div class="flex items-start justify-between">
+<div>
+<h4 class="font-label-md text-label-md text-on-surface line-clamp-1 font-semibold">Prada 1999 Nylon Messenger</h4>
+<p class="text-[12px] text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Hold expiring in 18 mins
+                  </p>
+</div>
+<span class="text-[11px] font-semibold text-secondary">Buyer: @marcus_v</span>
+</div>
+<div class="flex items-center justify-between text-[12px] pt-1 text-secondary">
+<span>Reserved for ₫4,500,000</span>
+<a class="text-primary font-semibold hover:underline flex items-center gap-0.5" href="#">
+                  Contact Buyer <span class="material-symbols-outlined text-[12px]">chat</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Editorial Boutique Tip / Banner Section -->
+<section class="mt-8 rounded-2xl bg-secondary-container/40 border border-outline-variant/30 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">workspace_premium</span>
+</div>
+<div>
+<h4 class="font-headline-md text-lg text-on-surface">Curator Advisory: Autumn Outerwear Drop Scheduled</h4>
+<p class="text-body-md font-body-md text-on-surface-variant text-sm mt-0.5">
+            Pre-registered buyers have increased by +34% this week. Ensure all garments are inspected, measurements documented, and authenticity certificates uploaded prior to Friday 18:00.
+          </p>
+</div>
+</div>
+<div class="shrink-0 flex items-center gap-3">
+<button class="px-5 py-2.5 rounded-full bg-surface-container-lowest text-on-surface font-label-md text-label-md border border-outline-variant hover:bg-surface-container transition-all">
+          Review Guidelines
+        </button>
+<button class="px-5 py-2.5 rounded-full bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-all shadow-xs">
+          Schedule Items
+        </button>
+</div>
+</section>
+<!-- Footer Space -->
+<footer class="mt-12 pt-6 border-t border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between text-label-sm font-label-sm text-secondary gap-4">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-on-surface text-sm">REWORE</span>
+<span>— Curated Circular Luxury Platform</span>
+</div>
+<div class="flex items-center gap-6">
+<a class="hover:text-primary transition-colors" href="#">Seller Policies</a>
+<a class="hover:text-primary transition-colors" href="#">Fee Schedule</a>
+<a class="hover:text-primary transition-colors" href="#">Authenticity Standards</a>
+<a class="hover:text-primary transition-colors" href="#">Support Concierge</a>
+</div>
+</footer>
+</main>
+</body></html>
