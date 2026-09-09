@@ -1,29 +1,38 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
+import {
+  ApiError,
+  productsApi,
+  wishlistApi,
+  type Product as ApiProduct,
+} from "@/app/lib/api";
 
 type Badge = "available" | "upcoming" | "auction";
 
 interface Product {
   id: number;
+  apiId?: string;
   shop: string;
   name: string;
   meta: string;
   price: number;
+  priceLabel: string;
   badge: Badge;
   badgeLabel: string;
   cta: string;
   detail: string;
   detailIcon: string;
   wishlist: boolean;
+  wishlistCount?: number;
   img: string;
 }
 
 const STORIES = [
-  { id: 1, label: "Tonight''s Drop", sublabel: "Exclusive", live: true,
+  { id: 1, label: "Tonight's Drop", sublabel: "Exclusive", live: true,
     img: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400&h=280&fit=crop&auto=format" },
   { id: 2, label: "Live Auctions", sublabel: "Bidding now",
     img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=280&fit=crop&auto=format" },
@@ -36,42 +45,42 @@ const STORIES = [
 const INITIAL_PRODUCTS: Product[] = [
   {
     id: 1, shop: "The Archive Room", name: "Wool Tweed Blazer",
-    meta: "Ralph Lauren · Size M · Excellent", price: 185,
+    meta: "Ralph Lauren · Size M · Excellent", price: 185, priceLabel: "$185",
     badge: "available", badgeLabel: "AVAILABLE",
     cta: "Hold Item", detail: "Qty locked: 1", detailIcon: "lock",
     wishlist: false, img: "/shop-blazer.png",
   },
   {
     id: 2, shop: "Silk & Stone", name: "Vintage Silk Cami",
-    meta: "Unbranded · Size S · Good", price: 45,
+    meta: "Unbranded · Size S · Good", price: 45, priceLabel: "$45",
     badge: "upcoming", badgeLabel: "UPCOMING DROP",
     cta: "Notify Me", detail: "Drops in 02:45:10", detailIcon: "schedule",
     wishlist: false, img: "/shop-silk-cami.png",
   },
   {
     id: 3, shop: "Curated Objects", name: "Leather Structure Bag",
-    meta: "Celine · OS · Very Good", price: 450,
+    meta: "Celine · OS · Very Good", price: 450, priceLabel: "$450",
     badge: "auction", badgeLabel: "IN AUCTION",
     cta: "Join Auction", detail: "14m 30s left", detailIcon: "timer",
     wishlist: true, img: "/shop-leather-bag.png",
   },
   {
     id: 4, shop: "The Archive Room", name: "Linen Trench Coat",
-    meta: "Acne Studios · Size L · Excellent", price: 320,
+    meta: "Acne Studios · Size L · Excellent", price: 320, priceLabel: "$320",
     badge: "available", badgeLabel: "AVAILABLE",
     cta: "Hold Item", detail: "Qty locked: 2", detailIcon: "lock",
     wishlist: false, img: "/shop-trench-coat.png",
   },
   {
     id: 5, shop: "Denim Archive", name: "90s Relaxed Denim Jeans",
-    meta: "Levi''s · Size 28 · Good", price: 75,
+    meta: "Levi's · Size 28 · Good", price: 75, priceLabel: "$75",
     badge: "upcoming", badgeLabel: "UPCOMING DROP",
     cta: "Notify Me", detail: "Drops in 05:12:00", detailIcon: "schedule",
     wishlist: false, img: "/shop-denim-jeans.png",
   },
   {
     id: 6, shop: "Maison Vintage", name: "Silk Slip Dress",
-    meta: "Prada · Size XS · Very Good", price: 680,
+    meta: "Prada · Size XS · Very Good", price: 680, priceLabel: "$680",
     badge: "auction", badgeLabel: "IN AUCTION",
     cta: "Join Auction", detail: "2h 05m left", detailIcon: "timer",
     wishlist: true, img: "/shop-slip-dress.png",
@@ -99,26 +108,117 @@ const BADGE_CONFIG = {
   auction:   { icon: "gavel",        text: "IN AUCTION", cls: "badge-auction" },
 };
 
+function formatVnd(amount: number) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function conditionLabel(condition: ApiProduct["condition"]) {
+  return condition
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function mapApiProduct(product: ApiProduct, index: number, wishlistIds: Set<string>): Product {
+  const imageFallbacks = [
+    "/shop-blazer.png",
+    "/shop-silk-cami.png",
+    "/shop-leather-bag.png",
+    "/shop-trench-coat.png",
+    "/shop-denim-jeans.png",
+    "/shop-slip-dress.png",
+  ];
+
+  return {
+    id: index + 1,
+    apiId: product.id,
+    shop: product.seller?.name ?? "REWORE Seller",
+    name: product.title,
+    meta: [product.brand, product.size ? `Size ${product.size}` : null, conditionLabel(product.condition)]
+      .filter(Boolean)
+      .join(" · "),
+    price: product.price,
+    priceLabel: formatVnd(product.price),
+    badge: "available",
+    badgeLabel: "AVAILABLE",
+    cta: "Hold Item",
+    detail: `${product._count?.wishlistItems ?? 0} saved · ${product.viewCount} views`,
+    detailIcon: "favorite",
+    wishlist: wishlistIds.has(product.id),
+    wishlistCount: product._count?.wishlistItems ?? 0,
+    img: product.images[0] || imageFallbacks[index % imageFallbacks.length],
+  };
+}
+
 export default function ShopPage() {
-  const router = useRouter();
+  const { isLoggedIn, isLoading } = useAuth();
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [checkedCats, setCheckedCats] = useState(["Tops", "Jackets"]);
   const [selectedSizes, setSelectedSizes] = useState(["S", "M"]);
   const [selectedStyles, setSelectedStyles] = useState(["Minimalist"]);
   const [followed, setFollowed] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<"all" | Badge>("all");
-  const [authChecked, setAuthChecked] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [apiMessage, setApiMessage] = useState("");
 
   useEffect(() => {
-    if (localStorage.getItem("rewore_authed") !== "true") {
-      router.replace("/login");
-    } else {
-      setAuthChecked(true);
-    }
-  }, [router]);
+    if (isLoading || !isLoggedIn) return;
 
-  const toggleWishlist = (id: number) =>
-    setProducts((p) => p.map((x) => x.id === id ? { ...x, wishlist: !x.wishlist } : x));
+    let cancelled = false;
+
+    Promise.allSettled([
+      productsApi.list({ limit: 50, sortBy: "newest" }),
+      wishlistApi.list({ limit: 50 }),
+    ]).then(([productsResult, wishlistResult]) => {
+      if (cancelled) return;
+
+      const wishlistIds = new Set<string>();
+      if (wishlistResult.status === "fulfilled") {
+        wishlistResult.value.data.forEach((item) => wishlistIds.add(item.productId));
+      }
+
+      if (productsResult.status === "fulfilled" && productsResult.value.data.length > 0) {
+        setProducts(productsResult.value.data.map((p, i) => mapApiProduct(p, i, wishlistIds)));
+      } else if (productsResult.status === "rejected") {
+        const err = productsResult.reason;
+        setApiMessage(err instanceof ApiError ? err.message : "Could not load products from API. Showing demo data.");
+      }
+
+      setDataLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoading, isLoggedIn]);
+
+  const toggleWishlist = async (id: number) => {
+    const product = products.find((item) => item.id === id);
+    if (!product) return;
+
+    const nextWishlist = !product.wishlist;
+    setProducts((p) => p.map((x) => x.id === id ? { ...x, wishlist: nextWishlist } : x));
+
+    if (!product.apiId) return;
+
+    try {
+      if (nextWishlist) {
+        await wishlistApi.add(product.apiId);
+      } else {
+        await wishlistApi.remove(product.apiId);
+      }
+    } catch (err) {
+      if (nextWishlist && err instanceof ApiError && err.status === 409) return;
+      setProducts((p) => p.map((x) => x.id === id ? { ...x, wishlist: product.wishlist } : x));
+      setApiMessage(err instanceof ApiError ? err.message : "Wishlist update failed.");
+    }
+  };
+
   const toggleCat = (cat: string) =>
     setCheckedCats((c) => c.includes(cat) ? c.filter((x) => x !== cat) : [...c, cat]);
   const toggleSize = (s: string) =>
@@ -128,20 +228,21 @@ export default function ShopPage() {
   const toggleFollow = (name: string) =>
     setFollowed((f) => f.includes(name) ? f.filter((x) => x !== name) : [name, ...f]);
 
-  const filtered = activeFilter === "all" ? products : products.filter(p => p.badge === activeFilter);
+  const filtered = useMemo(
+    () => activeFilter === "all" ? products : products.filter(p => p.badge === activeFilter),
+    [activeFilter, products]
+  );
 
   return (
     <>
       <Navbar />
-      {!authChecked ? (
+      {isLoading || !isLoggedIn ? (
         <div className="sp-auth-loading">
           <span className="sp-auth-spinner" />
         </div>
       ) : (
       <div className="sp-root">
         <div className="sp-wrap">
-
-          {/* ══ Filter Sidebar ══ */}
           <aside className="sp-sidebar">
             <div className="sp-sidebar-inner">
               <div className="sp-filter-top">
@@ -151,7 +252,6 @@ export default function ShopPage() {
                 </button>
               </div>
 
-              {/* Quick filter tabs */}
               <div className="sp-quick-tabs">
                 {(["all", "available", "upcoming", "auction"] as const).map(f => (
                   <button key={f} className={`sp-quick-tab${activeFilter === f ? " active" : ""}`} onClick={() => setActiveFilter(f)}>
@@ -162,7 +262,6 @@ export default function ShopPage() {
 
               <div className="sp-filter-divider" />
 
-              {/* Category */}
               <div className="sp-filter-group">
                 <p className="sp-filter-label">Category</p>
                 {CATEGORIES.map((cat) => (
@@ -180,7 +279,6 @@ export default function ShopPage() {
 
               <div className="sp-filter-divider" />
 
-              {/* Size */}
               <div className="sp-filter-group">
                 <p className="sp-filter-label">Size</p>
                 <div className="sp-sizes">
@@ -192,7 +290,6 @@ export default function ShopPage() {
 
               <div className="sp-filter-divider" />
 
-              {/* Style */}
               <div className="sp-filter-group">
                 <p className="sp-filter-label">Style</p>
                 <div className="sp-tags">
@@ -204,22 +301,18 @@ export default function ShopPage() {
 
               <div className="sp-filter-divider" />
 
-              {/* Price range */}
               <div className="sp-filter-group">
                 <p className="sp-filter-label">Price Range</p>
                 <div className="sp-price-inputs">
-                  <input type="number" className="sp-price-input" placeholder="$0" defaultValue="0" />
-                  <span className="sp-price-sep">—</span>
-                  <input type="number" className="sp-price-input" placeholder="$2000" defaultValue="2000" />
+                  <input type="number" className="sp-price-input" placeholder="0" defaultValue="0" />
+                  <span className="sp-price-sep">-</span>
+                  <input type="number" className="sp-price-input" placeholder="2000000" defaultValue="2000000" />
                 </div>
               </div>
             </div>
           </aside>
 
-          {/* ══ Main ══ */}
           <main className="sp-main">
-
-            {/* Curated Stories */}
             <section className="sp-stories">
               <div className="sp-stories-header">
                 <h2 className="sp-section-title">Curated Stories</h2>
@@ -231,10 +324,7 @@ export default function ShopPage() {
                     <Image src={s.img} alt={s.label} fill style={{ objectFit: "cover" }} sizes="200px" />
                     <div className="sp-story-overlay" />
                     {s.live && (
-                      <div className="sp-story-live">
-                        <span className="sp-live-dot" />
-                        LIVE
-                      </div>
+                      <div className="sp-story-live"><span className="sp-live-dot" />LIVE</div>
                     )}
                     <div className="sp-story-bottom">
                       <span className="sp-story-sublabel">{s.sublabel}</span>
@@ -245,12 +335,14 @@ export default function ShopPage() {
               </div>
             </section>
 
-            {/* For You */}
             <section className="sp-foryou">
               <div className="sp-foryou-head">
                 <div>
                   <h2 className="sp-section-title">For You</h2>
-                  <p className="sp-foryou-sub">Personalised picks based on your style</p>
+                  <p className="sp-foryou-sub">
+                    {dataLoading ? "Loading marketplace inventory..." : "Personalised picks based on your style"}
+                  </p>
+                  {apiMessage && <p className="sp-foryou-sub" style={{ color: "#ba1a1a" }}>{apiMessage}</p>}
                 </div>
                 <span className="sp-count-badge">{filtered.length} items</span>
               </div>
@@ -259,8 +351,7 @@ export default function ShopPage() {
                 {filtered.map((p) => {
                   const badge = BADGE_CONFIG[p.badge];
                   return (
-                    <article key={p.id} className="sp-card">
-                      {/* Image */}
+                    <article key={`${p.apiId ?? "demo"}-${p.id}`} className="sp-card">
                       <div className="sp-card-img-wrap">
                         <Image src={p.img} alt={p.name} fill style={{ objectFit: "cover" }} sizes="180px" />
                         <button
@@ -276,7 +367,6 @@ export default function ShopPage() {
                         </div>
                       </div>
 
-                      {/* Info */}
                       <div className="sp-card-body">
                         <div className="sp-card-shop">
                           <span className="sp-shop-avatar">{p.shop[0]}</span>
@@ -286,7 +376,7 @@ export default function ShopPage() {
                         <p className="sp-card-meta">{p.meta}</p>
 
                         <div className="sp-card-price-row">
-                          <span className="sp-price">${p.price.toLocaleString()}</span>
+                          <span className="sp-price">{p.priceLabel}</span>
                           {p.badge === "auction" && <span className="sp-bids">Current bid · 3 bids</span>}
                         </div>
 
@@ -307,10 +397,7 @@ export default function ShopPage() {
             </section>
           </main>
 
-          {/* ══ Right Panel ══ */}
           <aside className="sp-right">
-
-            {/* Reputation */}
             <div className="sp-rep">
               <div className="sp-rep-head">
                 <span className="material-symbols-outlined sp-rep-icon" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
@@ -323,19 +410,13 @@ export default function ShopPage() {
                 <span className="sp-rep-num">86</span>
                 <span className="sp-rep-chip">Eligible</span>
               </div>
-              <div className="sp-rep-track">
-                <div className="sp-rep-fill" style={{ width: "86%" }} />
-              </div>
-              <div className="sp-rep-tiers">
-                <span>Starter</span><span>Trusted</span><span>Elite</span>
-              </div>
+              <div className="sp-rep-track"><div className="sp-rep-fill" style={{ width: "86%" }} /></div>
+              <div className="sp-rep-tiers"><span>Starter</span><span>Trusted</span><span>Elite</span></div>
               <p className="sp-rep-desc">Participate in high-tier auctions and hold up to 3 items concurrently.</p>
             </div>
 
-            {/* Divider */}
             <div className="sp-right-divider" />
 
-            {/* Curators */}
             <div className="sp-curators">
               <h3 className="sp-curators-title">Curators to Follow</h3>
               <div className="sp-curator-list">
@@ -359,7 +440,6 @@ export default function ShopPage() {
               </div>
             </div>
 
-            {/* Drop countdown */}
             <div className="sp-countdown-card">
               <div className="sp-countdown-badge">NEXT DROP</div>
               <p className="sp-countdown-title">Archive Drop #42</p>
@@ -376,11 +456,9 @@ export default function ShopPage() {
                 Remind me
               </button>
             </div>
-
           </aside>
         </div>
 
-        {/* Footer */}
         <footer className="sp-footer">
           <p className="sp-footer-copy">© 2024 REWORE. Curated Secondhand Fashion.</p>
           <div className="sp-footer-links">
@@ -396,3 +474,4 @@ export default function ShopPage() {
     </>
   );
 }
+

@@ -1,46 +1,105 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
+import { useAuth } from "../../context/AuthContext";
 import { useSeller } from "../../context/SellerContext";
+import {
+  ApiError,
+  auctionsApi,
+  ordersApi,
+  productsApi,
+  type Auction,
+  type Order,
+  type Product,
+} from "@/app/lib/api";
 
 export default function SellerDashboard() {
+  const { user } = useAuth();
   const { sellerState } = useSeller();
-  const { sellerScore } = sellerState;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [auctions, setAuctions] = useState<Auction[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  const sellerScore = Math.max(sellerState.sellerScore, user?.reputation ?? 0);
   const LIVE_THRESHOLD = 75;
   const canLiveAuction = sellerScore >= LIVE_THRESHOLD;
+  const isSeller = sellerState.isSeller || user?.role === "SELLER" || user?.role === "ADMIN";
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    Promise.allSettled([
+      productsApi.list({ sellerId: user.id, limit: 50 }),
+      auctionsApi.list({ limit: 50 }),
+      ordersApi.list({ role: "seller", limit: 50 }),
+    ]).then(([productResult, auctionResult, orderResult]) => {
+      if (cancelled) return;
+
+      if (productResult.status === "fulfilled") setProducts(productResult.value.data);
+      if (auctionResult.status === "fulfilled") {
+        setAuctions(auctionResult.value.data.filter((auction) => auction.sellerId === user.id));
+      }
+      if (orderResult.status === "fulfilled") setOrders(orderResult.value.data);
+
+      const firstError = [productResult, auctionResult, orderResult].find(
+        (result) => result.status === "rejected"
+      );
+      if (firstError?.status === "rejected") {
+        const err = firstError.reason;
+        setMessage(err instanceof ApiError ? err.message : "Some seller data could not be loaded.");
+      }
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const paidRevenue = orders
+    .filter((order) => ["PAID", "SHIPPED", "DELIVERED"].includes(order.status))
+    .reduce((sum, order) => sum + order.totalPrice + order.shippingFee, 0);
 
   const features = [
     {
       icon: "add_circle",
       title: "List an Item",
-      description: "Upload your first piece and set a price or auction.",
-      available: true,
+      description: "Product create API is ready; this screen still needs a listing form.",
+      available: isSeller,
       href: "#",
+      stat: `${products.length} listings`,
     },
     {
       icon: "inventory_2",
       title: "My Listings",
-      description: "View and manage all your active and past listings.",
+      description: "Loaded from /api/products filtered by your seller id.",
       available: true,
       href: "#",
+      stat: `${products.filter((product) => product.status === "ACTIVE").length} active`,
     },
     {
       icon: "gavel",
       title: "Live Auctions",
       description: canLiveAuction
-        ? "Host real-time auctions for your rare pieces."
+        ? "Loaded from /api/auctions and filtered by seller id."
         : `Unlock at seller score ${LIVE_THRESHOLD}. You need ${LIVE_THRESHOLD - sellerScore} more points.`,
       available: canLiveAuction,
       href: "#",
+      stat: `${auctions.filter((auction) => auction.status === "LIVE").length} live`,
     },
     {
       icon: "payments",
       title: "Earnings",
-      description: "Track payouts and transaction history.",
+      description: "Loaded from seller orders that are paid, shipped, or delivered.",
       available: true,
       href: "#",
+      stat: `₫${new Intl.NumberFormat("vi-VN").format(paidRevenue)}`,
     },
   ];
 
@@ -49,7 +108,6 @@ export default function SellerDashboard() {
       <Navbar />
       <div className="min-h-screen bg-[#fff8f5] pt-24 pb-20">
         <main className="max-w-[1280px] mx-auto px-5 md:px-12">
-          {/* Header */}
           <div className="mb-10 opacity-0 animate-fade-in-up">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-[#974226] flex items-center justify-center">
@@ -62,14 +120,14 @@ export default function SellerDashboard() {
               </p>
             </div>
             <h1 className="font-[family-name:var(--font-playfair)] text-[36px] md:text-[44px] font-bold text-[#231a11] leading-tight mb-2">
-              Welcome back, Seller!
+              Welcome back, {user?.name ?? "Seller"}!
             </h1>
             <p className="text-[16px] text-[#55433d]">
-              Your seller score is <strong className="text-[#974226]">{sellerScore}</strong>. Keep selling to unlock more features.
+              Your seller score is <strong className="text-[#974226]">{sellerScore}</strong>. {loading ? "Loading seller data..." : "Dashboard data is mapped to backend APIs."}
             </p>
+            {message && <p className="mt-2 text-sm text-[#ba1a1a]">{message}</p>}
           </div>
 
-          {/* Score progress strip */}
           <div
             className="mb-10 bg-white rounded-[20px] border border-[#dbc1b9]/30 shadow-[0_4px_20px_-4px_rgba(43,33,24,0.06)] p-5 md:p-6 flex flex-col sm:flex-row items-center gap-5 opacity-0 animate-fade-in-up"
             style={{ animationDelay: "0.05s" }}
@@ -98,7 +156,6 @@ export default function SellerDashboard() {
             )}
           </div>
 
-          {/* Feature grid */}
           <div
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10 opacity-0 animate-fade-in-up"
             style={{ animationDelay: "0.10s" }}
@@ -127,29 +184,29 @@ export default function SellerDashboard() {
                   </span>
                 </div>
                 <div>
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#974226] mb-2">{f.stat}</p>
                   <h3 className="font-[family-name:var(--font-playfair)] text-[17px] font-semibold text-[#231a11] mb-1.5">
                     {f.title}
                   </h3>
                   <p className="text-[13px] text-[#88726c] leading-relaxed">{f.description}</p>
                 </div>
                 {f.available && (
-                  <div className="mt-auto flex items-center gap-1 text-[12px] font-semibold text-[#974226] group-hover:gap-2 transition-all">
-                    <span>Get started</span>
+                  <a href={f.href} className="mt-auto flex items-center gap-1 text-[12px] font-semibold text-[#974226] group-hover:gap-2 transition-all">
+                    <span>Open</span>
                     <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-                  </div>
+                  </a>
                 )}
               </div>
             ))}
           </div>
 
-          {/* Coming soon note */}
           <div
             className="text-center opacity-0 animate-fade-in-up"
             style={{ animationDelay: "0.18s" }}
           >
             <div className="inline-flex items-center gap-2 bg-[#f2dfd1]/40 border border-[#dbc1b9]/30 rounded-full px-5 py-2.5 text-[13px] text-[#88726c]">
               <span className="material-symbols-outlined text-[16px]">construction</span>
-              Full seller tools coming soon — this is a preview dashboard
+              Create product and create auction APIs are wrapped, but form UI is still pending.
             </div>
           </div>
 
@@ -163,3 +220,5 @@ export default function SellerDashboard() {
     </>
   );
 }
+
+

@@ -1,10 +1,10 @@
 export type AuctionStatus = "live" | "starts_soon" | "starts_tomorrow" | "upcoming";
-export type AuctionCategory = "All" | "Outerwear" | "Denim" | "Tops" | "Accessories";
+export type AuctionCategory = string;
 
 export interface Auction {
   id: string;
   title: string;
-  category: Exclude<AuctionCategory, "All">;
+  category: string;
   imageUrl: string;
   imageAlt: string;
   status: AuctionStatus;
@@ -114,3 +114,4 @@ export const CATEGORIES: AuctionCategory[] = [
   "Tops",
   "Accessories",
 ];
+

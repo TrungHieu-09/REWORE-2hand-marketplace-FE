@@ -1,10 +1,12 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="footer" id="footer">
       <div className="container">
         <div className="footer-grid">
           <div className="footer-brand">
-            <a href="/" className="brand">REWORE</a>
+            <Link href="/" className="brand">REWORE</Link>
             <p className="footer-tagline">Curating Conscious Fashion.<br />One piece at a time.</p>
             <div className="footer-socials">
               {[
@@ -37,3 +39,4 @@ export default function Footer() {
     </footer>
   );
 }
+

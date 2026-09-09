@@ -3,7 +3,7 @@
 import {
   createContext,
   useContext,
-  useEffect,
+
   useState,
   useCallback,
 } from "react";
@@ -91,12 +91,7 @@ const SellerContext = createContext<SellerContextType>({
 });
 
 export function SellerProvider({ children }: { children: React.ReactNode }) {
-  const [sellerState, setSellerState] = useState<SellerState>(DEFAULT_STATE);
-
-  // Hydrate from localStorage on mount
-  useEffect(() => {
-    setSellerState(loadState());
-  }, []);
+  const [sellerState, setSellerState] = useState<SellerState>(() => loadState());
 
   const persist = useCallback((next: SellerState) => {
     setSellerState(next);
@@ -165,3 +160,4 @@ export function SellerProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useSeller = () => useContext(SellerContext);
+

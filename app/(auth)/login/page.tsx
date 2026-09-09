@@ -1,8 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ApiError } from "@/app/lib/api";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,19 +15,22 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) { setError("Please enter your email."); return; }
     if (!password) { setError("Please enter your password."); return; }
     setError("");
     setLoading(true);
-    // Simulated auth — replace with real API call
-    setTimeout(() => {
-      localStorage.setItem("rewore_authed", "true");
-      setLoading(false);
+    try {
+      await login(email, password);
       router.push("/shop");
-    }, 1200);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Unable to sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,7 +52,7 @@ export default function LoginPage() {
 
         {/* Top branding */}
         <div className="auth-hero-top">
-          <a href="/" className="auth-brand-serif">EARTHEN ELEGANCE</a>
+          <Link href="/" className="auth-brand-serif">EARTHEN ELEGANCE</Link>
           <p className="auth-brand-sub">A Secondhand Dream</p>
         </div>
 
@@ -59,7 +65,7 @@ export default function LoginPage() {
             </p>
           </div>
           <div className="auth-hero-footer">
-            <a href="/" className="auth-brand-primary">REWORE.</a>
+            <Link href="/" className="auth-brand-primary">REWORE.</Link>
             <div className="auth-trust-seal">
               <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#974226", fontVariationSettings: "'FILL' 1" }}>verified</span>
               <span>Trust Verified Platform</span>
@@ -73,7 +79,7 @@ export default function LoginPage() {
         <div className="auth-card">
           {/* Mobile logo */}
           <div className="auth-mobile-logo">
-            <a href="/" className="brand">REWORE</a>
+            <Link href="/" className="brand">REWORE</Link>
           </div>
 
           {/* Header */}
@@ -156,10 +162,13 @@ export default function LoginPage() {
           {/* Sign up link */}
           <p className="auth-signup-link">
             Don&apos;t have an account?{" "}
-            <a href="/register" className="auth-link">Create one free</a>
+            <Link href="/register" className="auth-link">Create one free</Link>
           </p>
         </div>
       </div>
     </div>
   );
 }
+
+
+
