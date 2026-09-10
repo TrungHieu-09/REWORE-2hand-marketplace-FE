@@ -3,11 +3,15 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   authApi,
+  clearPendingOtpEmail,
   clearStoredAuth,
   getStoredToken,
   getStoredUser,
+  setPendingOtpEmail,
   setStoredAuth,
   type AuthUser,
+  type RegisterOtpResponse,
+  type ResendOtpResponse,
   type User,
 } from "@/app/lib/api";
 
@@ -21,7 +25,9 @@ interface AuthContextType {
     email: string;
     password: string;
     name: string;
-  }) => Promise<AuthUser>;
+  }) => Promise<RegisterOtpResponse>;
+  verifyOtp: (email: string, otp: string) => Promise<AuthUser>;
+  resendOtp: (email: string) => Promise<ResendOtpResponse>;
   refreshMe: () => Promise<User | null>;
   logout: () => Promise<void>;
 }
@@ -35,6 +41,12 @@ const AuthContext = createContext<AuthContextType>({
     throw new Error("AuthProvider is not mounted");
   },
   register: async () => {
+    throw new Error("AuthProvider is not mounted");
+  },
+  verifyOtp: async () => {
+    throw new Error("AuthProvider is not mounted");
+  },
+  resendOtp: async () => {
     throw new Error("AuthProvider is not mounted");
   },
   refreshMe: async () => null,
@@ -90,12 +102,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     name: string;
   }) => {
     const res = await authApi.register(payload);
+    setPendingOtpEmail(res.email ?? payload.email);
+    return res;
+  };
+
+  const verifyOtp = async (email: string, otp: string) => {
+    const res = await authApi.verifyOtp({ email, otp });
     setStoredAuth(res.token, res.user);
+    clearPendingOtpEmail();
     setToken(res.token);
     setUser(res.user);
     setIsLoggedIn(true);
     return res.user;
   };
+
+  const resendOtp = async (email: string) => authApi.resendOtp({ email });
 
   const refreshMe = async () => {
     if (!getStoredToken()) return null;
@@ -128,6 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         login,
         register,
+        verifyOtp,
+        resendOtp,
         refreshMe,
         logout,
       }}

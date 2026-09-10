@@ -6,6 +6,7 @@ export const API_BASE_URL =
 export const AUTH_TOKEN_KEY = "rewore_token";
 export const AUTH_FLAG_KEY = "rewore_authed";
 export const AUTH_USER_KEY = "rewore_user";
+export const PENDING_OTP_EMAIL_KEY = "rewore_pending_otp_email";
 
 export type Role = "BUYER" | "SELLER" | "ADMIN";
 export type ProductStatus = "ACTIVE" | "SOLD" | "AUCTION" | "INACTIVE";
@@ -42,6 +43,9 @@ export type ApiErrorResponse = {
   message: string;
   errors?: Record<string, string[]>;
   stack?: string;
+  requiresOtp?: boolean;
+  email?: string;
+  retryAfter?: number;
 };
 
 export type User = {
@@ -64,13 +68,25 @@ export type AuthUser = Partial<User> & {
   id: string;
   email: string;
   name: string;
-  role: Role;
+  role?: Role;
 };
 
 export type AuthResponse = {
   success: true;
   token: string;
   user: AuthUser;
+};
+
+export type RegisterOtpResponse = {
+  success: true;
+  message: string;
+  email?: string;
+  requiresOtp: true;
+};
+
+export type ResendOtpResponse = {
+  success: true;
+  message: string;
 };
 
 export type MeResponse = {
@@ -225,12 +241,23 @@ export type UpdateUserPayload = Partial<
 export class ApiError extends Error {
   status: number;
   errors?: Record<string, string[]>;
+  requiresOtp?: boolean;
+  email?: string;
+  retryAfter?: number;
 
-  constructor(message: string, status: number, errors?: Record<string, string[]>) {
+  constructor(
+    message: string,
+    status: number,
+    errors?: Record<string, string[]>,
+    meta?: Pick<ApiErrorResponse, "requiresOtp" | "email" | "retryAfter">
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.errors = errors;
+    this.requiresOtp = meta?.requiresOtp;
+    this.email = meta?.email;
+    this.retryAfter = meta?.retryAfter;
   }
 }
 
@@ -259,6 +286,21 @@ export function getStoredUser(): AuthUser | User | null {
   } catch {
     return null;
   }
+}
+
+export function setPendingOtpEmail(email: string) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(PENDING_OTP_EMAIL_KEY, email);
+}
+
+export function getPendingOtpEmail() {
+  if (typeof window === "undefined") return "";
+  return sessionStorage.getItem(PENDING_OTP_EMAIL_KEY) ?? "";
+}
+
+export function clearPendingOtpEmail() {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(PENDING_OTP_EMAIL_KEY);
 }
 
 function toQueryString(params?: Record<string, string | number | undefined>) {
@@ -305,7 +347,12 @@ export async function apiRequest<T>(
     throw new ApiError(
       error.message || `Request failed with status ${response.status}`,
       response.status,
-      error.errors
+      error.errors,
+      {
+        requiresOtp: error.requiresOtp,
+        email: error.email,
+        retryAfter: error.retryAfter,
+      }
     );
   }
 
@@ -318,7 +365,17 @@ export const healthApi = {
 
 export const authApi = {
   register: (payload: { email: string; password: string; name: string }) =>
-    apiRequest<AuthResponse>("/api/auth/register", {
+    apiRequest<RegisterOtpResponse>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  verifyOtp: (payload: { email: string; otp: string }) =>
+    apiRequest<AuthResponse>("/api/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  resendOtp: (payload: { email: string }) =>
+    apiRequest<ResendOtpResponse>("/api/auth/resend-otp", {
       method: "POST",
       body: JSON.stringify(payload),
     }),

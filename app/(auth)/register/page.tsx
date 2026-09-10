@@ -30,8 +30,9 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      await register({ email, password, name: fullName.trim() });
-      router.push("/shop");
+      const res = await register({ email, password, name: fullName.trim() });
+      const otpEmail = res.email ?? email.trim();
+      router.push(`/verify-otp?email=${encodeURIComponent(otpEmail)}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unable to create account. Please try again.");
     } finally {
@@ -88,7 +89,7 @@ export default function RegisterPage() {
           </div>
           <div className="auth-card-header">
             <h1 className="auth-card-title">Create your account</h1>
-            <p className="auth-card-sub">Free forever. No credit card required.</p>
+            <p className="auth-card-sub">We&apos;ll email you a verification code.</p>
           </div>
           <form className="auth-form" onSubmit={handleSubmit} id="registerForm" noValidate>
             <div className="auth-field">
@@ -198,7 +199,7 @@ export default function RegisterPage() {
             )}
             <button type="submit" className="auth-btn-primary" id="create-account-btn" disabled={loading}>
               {loading ? (
-                <><span className="auth-spinner" />Creating account…</>
+                <><span className="auth-spinner" />Sending OTP...</>
               ) : (
                 <>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>person_add</span>

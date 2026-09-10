@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError } from "@/app/lib/api";
+import { ApiError, setPendingOtpEmail } from "@/app/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
 
 export default function LoginPage() {
@@ -27,6 +27,12 @@ export default function LoginPage() {
       await login(email, password);
       router.push("/shop");
     } catch (err) {
+      if (err instanceof ApiError && err.requiresOtp) {
+        const otpEmail = err.email ?? email.trim();
+        setPendingOtpEmail(otpEmail);
+        router.push(`/verify-otp?email=${encodeURIComponent(otpEmail)}`);
+        return;
+      }
       setError(err instanceof ApiError ? err.message : "Unable to sign in. Please try again.");
     } finally {
       setLoading(false);
