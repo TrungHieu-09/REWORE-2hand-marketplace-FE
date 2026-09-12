@@ -9,14 +9,31 @@ export const AUTH_USER_KEY = "rewore_user";
 export const PENDING_OTP_EMAIL_KEY = "rewore_pending_otp_email";
 
 export type Role = "BUYER" | "SELLER" | "ADMIN";
-export type ProductStatus = "ACTIVE" | "SOLD" | "AUCTION" | "INACTIVE";
+export type ProductStatus = "ACTIVE" | "SOLD" | "AUCTION" | "INACTIVE" | "HIDDEN" | "REMOVED";
 export type ProductCondition = "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
 export type AuctionStatus = "UPCOMING" | "LIVE" | "ENDED" | "CANCELLED";
+export type SellerApplicationStatus =
+  | "PENDING"
+  | "PENDING_VERIFICATION"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED";
+export type SellerStatus =
+  | "NONE"
+  | "PENDING"
+  | "PENDING_VERIFICATION"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED";
+export type ReportStatus = "OPEN" | "RESOLVED" | "DISMISSED";
+export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
 export type OrderStatus =
   | "PENDING"
+  | "CONFIRMED"
   | "PAID"
   | "SHIPPED"
   | "DELIVERED"
+  | "COMPLETED"
   | "CANCELLED"
   | "REFUNDED";
 
@@ -61,6 +78,9 @@ export type User = {
   totalSales: number;
   totalBids: number;
   isVerified: boolean;
+  sellerStatus?: SellerStatus;
+  sellerApprovedAt?: string | null;
+  sellerSuspendedReason?: string | null;
   createdAt: string;
 };
 
@@ -158,6 +178,7 @@ export type Order = {
   auctionId: string | null;
   totalPrice: number;
   shippingFee: number;
+  paymentStatus?: PaymentStatus;
   status: OrderStatus;
   shippingAddress: string | null;
   note: string | null;
@@ -178,6 +199,56 @@ export type WishlistItem = {
   productId: string;
   product: Product;
   createdAt: string;
+};
+
+export type SellerApplication = {
+  id: string;
+  userId: string;
+  shopName: string;
+  legalName?: string;
+  idCardFrontImage?: string;
+  idCardBackImage?: string;
+  idCardFrontUrl?: string;
+  idCardBackUrl?: string;
+  selfieUrl?: string | null;
+  phone?: string;
+  pickupAddress: string;
+  bankName: string | null;
+  bankAccountNumber: string;
+  bankAccountHolder?: string;
+  bankAccountName?: string;
+  vietQr?: string | null;
+  sellingDescription?: string | null;
+  acceptedSellerTerms?: boolean;
+  status: SellerApplicationStatus;
+  rejectionReason: string | null;
+  reviewedByAdminId: string | null;
+  reviewedAt: string | null;
+  rejectedReason?: string | null;
+  reviewedBy?: string | null;
+  user?: Pick<User, "id" | "email" | "name" | "phone" | "address" | "role" | "isVerified" | "sellerStatus" | "createdAt"> & {
+    isBanned?: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SellerReport = {
+  id: string;
+  reporterId: string;
+  targetType?: "USER" | "PRODUCT" | "ORDER";
+  targetId?: string;
+  sellerId?: string;
+  reason: string;
+  description?: string | null;
+  status: ReportStatus;
+  resolutionAction?: "WARN" | "SUSPEND" | "DISMISS" | null;
+  resolutionNote?: string | null;
+  reporter?: Pick<User, "id" | "email" | "name" | "avatar">;
+  resolvedByAdmin?: Pick<User, "id" | "email" | "name">;
+  seller?: Pick<User, "id" | "email" | "name" | "avatar" | "role" | "sellerStatus">;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ProductListQuery = {
@@ -211,6 +282,14 @@ export type OrderListQuery = PageQuery & {
 
 export type UserListQuery = PageQuery & {
   search?: string;
+};
+
+export type AdminApplicationQuery = PageQuery & {
+  status?: SellerApplicationStatus | "ALL";
+};
+
+export type AdminReportQuery = PageQuery & {
+  status?: ReportStatus | "ALL";
 };
 
 export type CreateProductPayload = {
@@ -508,6 +587,94 @@ export const wishlistApi = {
       `/api/wishlist/check/${productId}`,
       { auth: true }
     ),
+};
+
+export const adminApi = {
+  sellerApplications: (query?: AdminApplicationQuery) =>
+    apiRequest<ApiListResponse<SellerApplication>>(
+      `/api/admin/sellers${toQueryString({
+        ...query,
+        status: query?.status === "ALL" ? undefined : query?.status,
+      })}`,
+      { auth: true }
+    ),
+  sellerApplication: (id: string) =>
+    apiRequest<ApiItemResponse<SellerApplication>>(
+      `/api/admin/sellers/${id}`,
+      { auth: true }
+    ),
+  approveSellerApplication: (id: string) =>
+    apiRequest<{
+      success: true;
+      message: string;
+      data: SellerApplication;
+    }>(`/api/admin/sellers/${id}/approve`, {
+      method: "POST",
+      auth: true,
+    }),
+  rejectSellerApplication: (id: string, reason: string) =>
+    apiRequest<{
+      success: true;
+      message: string;
+      data: SellerApplication;
+    }>(`/api/admin/sellers/${id}/reject`, {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify({ reason }),
+    }),
+  reports: (query?: AdminReportQuery) =>
+    apiRequest<ApiListResponse<SellerReport>>(
+      `/api/admin/reports${toQueryString({
+        ...query,
+        status: query?.status === "ALL" ? undefined : query?.status,
+      })}`,
+      { auth: true }
+    ),
+  reviewReport: (
+    id: string,
+    payload: { action: "warn" | "suspend" | "dismiss"; note?: string }
+  ) =>
+    apiRequest<ApiItemResponse<SellerReport>>(
+      `/api/admin/reports/${id}/resolve`,
+      {
+        method: "POST",
+        auth: true,
+        body: JSON.stringify(payload),
+      }
+    ),
+  users: (query?: UserListQuery) =>
+    apiRequest<ApiListResponse<User>>(`/api/admin/users${toQueryString(query)}`, {
+      auth: true,
+    }),
+  products: (query?: ProductListQuery) =>
+    apiRequest<ApiListResponse<Product>>(`/api/admin/products${toQueryString(query)}`, {
+      auth: true,
+    }),
+  orders: (query?: PageQuery & { paymentStatus?: PaymentStatus; orderStatus?: OrderStatus }) =>
+    apiRequest<ApiListResponse<Order>>(`/api/admin/orders${toQueryString(query)}`, {
+      auth: true,
+    }),
+  confirmOrderPayment: (id: string) =>
+    apiRequest<ApiItemResponse<Order>>(`/api/admin/orders/${id}/confirm-payment`, {
+      method: "PATCH",
+      auth: true,
+    }),
+  statsOverview: () =>
+    apiRequest<ApiItemResponse<{
+      total_users: number;
+      total_sellers_approved: number;
+      total_products: number;
+      total_orders: number;
+      gmv_total: number;
+      pending_sellers_count: number;
+      open_reports_count: number;
+    }>>("/api/admin/stats/overview", { auth: true }),
+  statsGrowth: (range: "week" | "month" = "week") =>
+    apiRequest<{
+      success: true;
+      range: "week" | "month";
+      data: { date: string; users_new: number; orders_new: number; gmv: number }[];
+    }>(`/api/admin/stats/growth${toQueryString({ range })}`, { auth: true }),
 };
 
 

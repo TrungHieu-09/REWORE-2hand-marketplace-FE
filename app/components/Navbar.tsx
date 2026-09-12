@@ -8,7 +8,7 @@ import { useSeller } from "../context/SellerContext";
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, logout, user } = useAuth();
   const { sellerState } = useSeller();
 
   useEffect(() => {
@@ -17,20 +17,27 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const sellHref = sellerState.isSeller ? "/seller/dashboard" : "/profile/become-seller";
+  const isAdmin = user?.role === "ADMIN";
+  const sellHref = sellerState.isSeller || isAdmin ? "/seller/dashboard" : "/profile/become-seller";
 
   return (
     <nav className={`navbar${scrolled ? " scrolled" : ""}`} id="navbar">
       <div className="nav-inner">
-        <Link href="/" className="brand">REWORE</Link>
+        <Link href={isAdmin ? "/admin" : "/"} className="brand">REWORE</Link>
 
         <div className="nav-links">
-          <Link href="/#how-it-works">How it Works</Link>
-          <Link href={isLoggedIn ? "/shop" : "/#drops"}>Shop</Link>
-          <Link href={isLoggedIn ? "/auctions" : "/#trust"}>Auctions</Link>
-          <Link href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"}>Wishlist</Link>
+          {isAdmin ? (
+            <Link href="/admin">Admin</Link>
+          ) : (
+            <>
+              <Link href="/#how-it-works">How it Works</Link>
+              <Link href={isLoggedIn ? "/shop" : "/#drops"}>Shop</Link>
+              <Link href={isLoggedIn ? "/auctions" : "/#trust"}>Auctions</Link>
+              <Link href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"}>Wishlist</Link>
+            </>
+          )}
 
-          {isLoggedIn && (
+          {isLoggedIn && !isAdmin && (
             <Link
               href={sellHref}
               className={`font-semibold transition-colors ${
@@ -56,30 +63,43 @@ export default function Navbar() {
               </button>
 
               <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#f2dfd1] overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-2.5 px-4 py-3 text-sm text-[#231a11] font-semibold hover:bg-[#fff8f5]"
-                >
-                  <span className="material-symbols-outlined text-[18px]">person</span>
-                  My Profile
-                </Link>
-                {sellerState.isSeller && (
+                {isAdmin && (
                   <Link
-                    href="/seller/dashboard"
-                    className="flex items-center gap-2.5 px-4 py-3 text-sm text-[#556138] font-semibold hover:bg-[#fff8f5] border-t border-[#f2dfd1]"
+                    href="/admin"
+                    className="flex items-center gap-2.5 px-4 py-3 text-sm text-[#974226] font-semibold hover:bg-[#fff8f5]"
                   >
-                    <span className="material-symbols-outlined text-[18px]">storefront</span>
-                    Seller Dashboard
+                    <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                    Admin Dashboard
                   </Link>
                 )}
-                {sellerState.verificationStatus === "pending" && !sellerState.isSeller && (
-                  <Link
-                    href="/profile/become-seller/status"
-                    className="flex items-center gap-2.5 px-4 py-3 text-sm text-[#974226] font-semibold hover:bg-[#fff8f5] border-t border-[#f2dfd1]"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">hourglass_empty</span>
-                    Verification Status
-                  </Link>
+                {!isAdmin && (
+                  <>
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2.5 px-4 py-3 text-sm text-[#231a11] font-semibold hover:bg-[#fff8f5]"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">person</span>
+                      My Profile
+                    </Link>
+                    {sellerState.isSeller && (
+                      <Link
+                        href="/seller/dashboard"
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm text-[#556138] font-semibold hover:bg-[#fff8f5] border-t border-[#f2dfd1]"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">storefront</span>
+                        Seller Dashboard
+                      </Link>
+                    )}
+                    {sellerState.verificationStatus === "pending" && !sellerState.isSeller && (
+                      <Link
+                        href="/profile/become-seller/status"
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm text-[#974226] font-semibold hover:bg-[#fff8f5] border-t border-[#f2dfd1]"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">hourglass_empty</span>
+                        Verification Status
+                      </Link>
+                    )}
+                  </>
                 )}
                 <button
                   onClick={logout}
@@ -109,11 +129,17 @@ export default function Navbar() {
       </div>
 
       <div className={`mobile-menu${mobileOpen ? " open" : ""}`} id="mobile-menu">
-        <Link href="/#how-it-works" onClick={() => setMobileOpen(false)}>How it Works</Link>
-        <Link href={isLoggedIn ? "/shop" : "/#drops"} onClick={() => setMobileOpen(false)}>Shop</Link>
-        <Link href={isLoggedIn ? "/auctions" : "/#trust"} onClick={() => setMobileOpen(false)}>Auctions</Link>
-        <Link href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"} onClick={() => setMobileOpen(false)}>Wishlist</Link>
-        {isLoggedIn && (
+        {isAdmin ? (
+          <Link href="/admin" onClick={() => setMobileOpen(false)}>Admin</Link>
+        ) : (
+          <>
+            <Link href="/#how-it-works" onClick={() => setMobileOpen(false)}>How it Works</Link>
+            <Link href={isLoggedIn ? "/shop" : "/#drops"} onClick={() => setMobileOpen(false)}>Shop</Link>
+            <Link href={isLoggedIn ? "/auctions" : "/#trust"} onClick={() => setMobileOpen(false)}>Auctions</Link>
+            <Link href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"} onClick={() => setMobileOpen(false)}>Wishlist</Link>
+          </>
+        )}
+        {isLoggedIn && !isAdmin && (
           <Link
             href={sellHref}
             className="font-semibold text-[#974226]"
@@ -126,15 +152,25 @@ export default function Navbar() {
         {isLoggedIn ? (
           <>
             <hr />
-            <Link href="/profile" className="flex items-center gap-2 text-[#231a11]" onClick={() => setMobileOpen(false)}>
-              <span className="material-symbols-outlined text-[20px]">person</span>
-              My Profile
-            </Link>
-            {sellerState.isSeller && (
-              <Link href="/seller/dashboard" className="flex items-center gap-2 text-[#556138]" onClick={() => setMobileOpen(false)}>
-                <span className="material-symbols-outlined text-[20px]">storefront</span>
-                Seller Dashboard
+            {isAdmin && (
+              <Link href="/admin" className="flex items-center gap-2 text-[#974226]" onClick={() => setMobileOpen(false)}>
+                <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                Admin Dashboard
               </Link>
+            )}
+            {!isAdmin && (
+              <>
+                <Link href="/profile" className="flex items-center gap-2 text-[#231a11]" onClick={() => setMobileOpen(false)}>
+                  <span className="material-symbols-outlined text-[20px]">person</span>
+                  My Profile
+                </Link>
+                {sellerState.isSeller && (
+                  <Link href="/seller/dashboard" className="flex items-center gap-2 text-[#556138]" onClick={() => setMobileOpen(false)}>
+                    <span className="material-symbols-outlined text-[20px]">storefront</span>
+                    Seller Dashboard
+                  </Link>
+                )}
+              </>
             )}
             <button
               onClick={logout}

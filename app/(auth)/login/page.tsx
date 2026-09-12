@@ -24,8 +24,8 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      router.push("/shop");
+      const signedInUser = await login(email, password);
+      router.push(signedInUser.role === "ADMIN" ? "/admin" : "/shop");
     } catch (err) {
       if (err instanceof ApiError && err.requiresOtp) {
         const otpEmail = err.email ?? email.trim();

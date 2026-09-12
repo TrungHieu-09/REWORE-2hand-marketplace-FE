@@ -51,8 +51,8 @@ export default function VerifyOtpPage() {
     setError("");
     setLoading(true);
     try {
-      await verifyOtp(cleanEmail, cleanOtp);
-      router.push("/shop");
+      const verifiedUser = await verifyOtp(cleanEmail, cleanOtp);
+      router.push(verifiedUser.role === "ADMIN" ? "/admin" : "/shop");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unable to verify OTP.");
     } finally {
