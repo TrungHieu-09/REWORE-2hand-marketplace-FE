@@ -1,4 +1,4 @@
-import type { AuctionStatus } from "../_data/mock-auctions";
+import type { AuctionStatus } from "../_types";
 
 interface LiveBadgeProps {
   status: AuctionStatus;

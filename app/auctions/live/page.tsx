@@ -7,19 +7,12 @@ import {
   ApiError,
   auctionsApi,
   bidsApi,
+  sellerDisplayName,
   type Auction,
   type Bid,
 } from "@/app/lib/api";
 
 type BidEntry = { id: string; user: string; initials: string; amount: number; ago: string };
-
-const FALLBACK_BIDS: BidEntry[] = [
-  { id: "demo-1", user: "@mai.vintage", initials: "M", amount: 570000, ago: "Just now" },
-  { id: "demo-2", user: "@hieu_le", initials: "H", amount: 550000, ago: "12s ago" },
-  { id: "demo-3", user: "@trang.n", initials: "T", amount: 500000, ago: "45s ago" },
-];
-
-const FALLBACK_THUMBNAILS = ["/product3.png", "/product1.png", "/product2.png"];
 
 function fmt(n: number) {
   return "₫" + new Intl.NumberFormat("vi-VN").format(n);
@@ -56,16 +49,13 @@ function mapBid(bid: Bid): BidEntry {
   };
 }
 
-function useCountdown(targetIso?: string, fallbackSeconds = 204) {
-  const [sec, setSec] = useState(() => secondsUntil(targetIso) || fallbackSeconds);
+function useCountdown(targetIso?: string) {
+  const [sec, setSec] = useState(() => secondsUntil(targetIso));
 
   useEffect(() => {
-    const id = setInterval(
-      () => setSec(secondsUntil(targetIso) || fallbackSeconds),
-      1000
-    );
+    const id = setInterval(() => setSec(secondsUntil(targetIso)), 1000);
     return () => clearInterval(id);
-  }, [targetIso, fallbackSeconds]);
+  }, [targetIso]);
 
   const hours = Math.floor(sec / 3600);
   const minutes = Math.floor((sec % 3600) / 60).toString().padStart(2, "0");
@@ -77,8 +67,8 @@ export default function LiveAuctionPage() {
   const { isLoggedIn } = useAuth();
   const [activeThumb, setActiveThumb] = useState(0);
   const [auction, setAuction] = useState<Auction | null>(null);
-  const [bidAmount, setBidAmount] = useState(590000);
-  const [bids, setBids] = useState<BidEntry[]>(FALLBACK_BIDS);
+  const [bidAmount, setBidAmount] = useState(0);
+  const [bids, setBids] = useState<BidEntry[]>([]);
   const [bidPlaced, setBidPlaced] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -96,7 +86,7 @@ export default function LiveAuctionPage() {
       .then((res) => {
         if (cancelled) return;
         if (!res) {
-          setMessage("No live auction from API right now. Showing demo room.");
+          setMessage("No live auction from API right now.");
           return;
         }
         setAuction(res.data);
@@ -109,7 +99,7 @@ export default function LiveAuctionPage() {
           setMessage(
             err instanceof ApiError
               ? err.message
-              : "Could not load live auction from API. Showing demo room."
+              : "Could not load live auction from API."
           );
         }
       })
@@ -124,17 +114,15 @@ export default function LiveAuctionPage() {
 
   const thumbnails = useMemo(() => {
     const images = auction?.product?.images?.filter(Boolean) ?? [];
-    return images.length ? images : FALLBACK_THUMBNAILS;
+    return images;
   }, [auction]);
 
-  const productName = auction?.product?.title ?? "Archive Denim Jacket 90s";
-  const productDescription =
-    auction?.product?.description ??
-    "Authentic late 90s heavyweight denim sourced from Tokyo. Features natural fading, slight distressing on the cuffs, and original copper rivets.";
+  const productName = auction?.product?.title ?? "Live auction";
+  const productDescription = auction?.product?.description ?? "";
   const seller = auction?.seller ?? auction?.product?.seller;
-  const sellerName = seller?.name ?? "mai.vintage";
-  const minIncrement = auction?.minIncrement ?? 20000;
-  const currentBid = Math.max(auction?.currentBid ?? 570000, bids[0]?.amount ?? 0);
+  const sellerName = sellerDisplayName(auction?.product?.seller ?? auction?.seller, sellerDisplayName(seller, "Seller"));
+  const minIncrement = auction?.minIncrement ?? 0;
+  const currentBid = Math.max(auction?.currentBid ?? 0, bids[0]?.amount ?? 0);
   const watching = auction?._count?.bids ?? bids.length;
   const { display: timeDisplay, seconds } = useCountdown(auction?.endTime);
   const isEndingSoon = seconds <= 30;
@@ -173,24 +161,41 @@ export default function LiveAuctionPage() {
         </nav>
         <div className={`la-live-pill${isEndingSoon ? " ending" : ""}`}>
           <span className="la-live-dot" />
-          {loading ? "CONNECTING" : isLiveAuction ? (isEndingSoon ? "ENDING SOON" : "LIVE · CONNECTED") : "API DEMO"}
+          {loading ? "CONNECTING" : isLiveAuction ? (isEndingSoon ? "ENDING SOON" : "LIVE · CONNECTED") : "NO LIVE AUCTION"}
         </div>
       </div>
 
       {message && <p className="mx-auto max-w-[1280px] px-5 md:px-12 pb-4 text-sm text-[#ba1a1a]">{message}</p>}
 
+      {!loading && !auction ? (
+        <div className="mx-auto max-w-[720px] px-5 md:px-12 py-24 text-center">
+          <span className="material-symbols-outlined text-[64px] text-[#dbc1b9]">gavel</span>
+          <h1 className="font-[family-name:var(--font-playfair)] text-[34px] font-semibold text-[#231a11] mt-4">
+            Chưa có phiên live
+          </h1>
+          <p className="text-[#88726c] mt-2">Khi backend có phiên đấu giá live, phòng đấu giá sẽ hiển thị tại đây.</p>
+        </div>
+      ) : (
+
       <div className="la-grid">
         <aside className="la-product-panel">
           <div className="la-main-img-wrap">
-            <Image
-              src={thumbnails[activeThumb] ?? FALLBACK_THUMBNAILS[0]}
-              alt={productName}
-              fill
-              className="la-main-img"
-              style={{ objectFit: "cover" }}
-              sizes="400px"
-            />
-            <div className="la-est-badge">Start {fmt(auction?.startPrice ?? 600000)}</div>
+            {thumbnails[activeThumb] ? (
+              <Image
+                src={thumbnails[activeThumb]}
+                alt={productName}
+                fill
+                className="la-main-img"
+                style={{ objectFit: "cover" }}
+                sizes="400px"
+              />
+            ) : (
+              <div className="admin-image-placeholder h-full">
+                <span className="material-symbols-outlined">image_not_supported</span>
+                <span>Không có ảnh</span>
+              </div>
+            )}
+            <div className="la-est-badge">Start {fmt(auction?.startPrice ?? 0)}</div>
           </div>
 
           <div className="la-thumbs">
@@ -368,6 +373,7 @@ export default function LiveAuctionPage() {
           </div>
         </aside>
       </div>
+      )}
     </div>
   );
 }

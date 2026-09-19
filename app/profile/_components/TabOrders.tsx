@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ApiError, ordersApi, type Order, type OrderStatus } from "@/app/lib/api";
+import { ApiError, ordersApi, sellerDisplayName, type Order, type OrderStatus } from "@/app/lib/api";
 
 const NEXT_STATUSES: OrderStatus[] = ["PAID", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"];
 
@@ -84,15 +84,21 @@ export default function TabOrders() {
         <div className="divide-y divide-[#f2dfd1]">
           {orders.map((order) => {
             const product = order.product;
-            const image = product?.images?.[0] || "/product2.png";
+            const image = product?.images?.[0];
             return (
               <div key={order.id} className="p-5 flex flex-col sm:flex-row gap-4 hover:bg-[#fff8f5] transition-colors">
                 <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-[#feeadc] shrink-0">
-                  <Image src={image} alt={product?.title ?? "Order item"} fill className="object-cover" />
+                  {image ? (
+                    <Image src={image} alt={product?.title ?? "Order item"} fill className="object-cover" />
+                  ) : (
+                    <div className="admin-image-placeholder h-full">
+                      <span className="material-symbols-outlined">image_not_supported</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-base font-semibold text-[#231a11] truncate">{product?.title ?? "Order item"}</h4>
-                  <p className="text-sm text-[#88726c] mt-1">Seller: {order.seller?.name ?? "REWORE Seller"}</p>
+                  <p className="text-sm text-[#88726c] mt-1">Seller: {sellerDisplayName(order.seller)}</p>
                   <p className="font-[family-name:var(--font-playfair)] text-xl font-bold text-[#231a11] mt-3">
                     {formatVND(order.totalPrice + order.shippingFee)}
                   </p>

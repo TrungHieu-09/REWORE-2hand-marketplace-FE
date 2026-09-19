@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { AuctionCategory } from "../_data/mock-auctions";
-import { CATEGORIES as FALLBACK_CATEGORIES } from "../_data/mock-auctions";
+import type { AuctionCategory } from "../_types";
 
 const SORT_OPTIONS = [
   "Ending Soon",
@@ -20,7 +19,7 @@ interface CategoryFilterBarProps {
 
 export default function CategoryFilterBar({
   active,
-  categories = FALLBACK_CATEGORIES,
+  categories = ["All"],
   onChange,
 }: CategoryFilterBarProps) {
   const [sortOpen, setSortOpen] = useState(false);

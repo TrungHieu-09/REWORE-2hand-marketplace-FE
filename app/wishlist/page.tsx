@@ -1,12 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 import {
   ApiError,
+  apiAssetUrl,
+  sellerDisplayName,
   wishlistApi,
   type Product,
   type WishlistItem as ApiWishlistItem,
@@ -19,18 +22,9 @@ interface WishlistItem {
   shop: string;
   meta: string;
   priceLabel: string;
-  img: string;
+  img?: string;
   badge: "available" | "upcoming" | "auction";
 }
-
-const FALLBACK_IMAGES = [
-  "/shop-leather-bag.png",
-  "/shop-slip-dress.png",
-  "/shop-blazer.png",
-  "/shop-trench-coat.png",
-  "/shop-denim-jeans.png",
-  "/shop-silk-cami.png",
-];
 
 const BADGE_LABEL: Record<WishlistItem["badge"], string> = {
   available: "AVAILABLE",
@@ -59,13 +53,13 @@ function conditionLabel(condition: Product["condition"]) {
     .join(" ");
 }
 
-function mapWishlistItem(item: ApiWishlistItem, index: number): WishlistItem {
+function mapWishlistItem(item: ApiWishlistItem): WishlistItem {
   const product = item.product;
   return {
     id: item.id,
     productId: item.productId,
     name: product.title,
-    shop: product.seller?.name ?? "REWORE Seller",
+    shop: sellerDisplayName(product.seller),
     meta: [
       product.brand,
       product.size ? `Size ${product.size}` : null,
@@ -75,7 +69,7 @@ function mapWishlistItem(item: ApiWishlistItem, index: number): WishlistItem {
       .filter(Boolean)
       .join(" · "),
     priceLabel: formatVnd(product.price),
-    img: product.images[0] || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
+    img: apiAssetUrl(product.images[0]),
     badge: product.status === "AUCTION" ? "auction" : "available",
   };
 }
@@ -171,7 +165,16 @@ export default function WishlistPage() {
               {items.map(item => (
                 <div key={item.id} className="wl-card">
                   <div className="wl-card-img-wrap">
-                    <Image src={item.img} alt={item.name} fill style={{ objectFit: "cover" }} sizes="280px" />
+                    <Link href={`/products/${item.productId}`} className="wl-card-image-link" aria-label={`Xem ${item.name}`}>
+                      {item.img ? (
+                        <Image src={item.img} alt={item.name} fill style={{ objectFit: "cover" }} sizes="280px" />
+                      ) : (
+                        <div className="admin-image-placeholder">
+                          <span className="material-symbols-outlined">image_not_supported</span>
+                          <span>Không có ảnh</span>
+                        </div>
+                      )}
+                    </Link>
                     <div className={`wl-badge ${BADGE_CLS[item.badge]}`}>
                       {BADGE_LABEL[item.badge]}
                     </div>
@@ -181,13 +184,15 @@ export default function WishlistPage() {
                   </div>
                   <div className="wl-card-body">
                     <p className="wl-card-shop">{item.shop}</p>
-                    <h3 className="wl-card-name">{item.name}</h3>
+                    <h3 className="wl-card-name">
+                      <Link href={`/products/${item.productId}`}>{item.name}</Link>
+                    </h3>
                     <p className="wl-card-meta">{item.meta}</p>
                     <div className="wl-card-footer">
                       <span className="wl-card-price">{item.priceLabel}</span>
-                      <a href={item.badge === "auction" ? "/auctions/live" : "/shop"} className={`wl-cta${item.badge === "auction" ? " auction" : ""}`}>
-                        {item.badge === "auction" ? "Join Auction" : "View Item"}
-                      </a>
+                      <Link href={`/products/${item.productId}`} className={`wl-cta${item.badge === "auction" ? " auction" : ""}`}>
+                        View Item
+                      </Link>
                     </div>
                   </div>
                 </div>

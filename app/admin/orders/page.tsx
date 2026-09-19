@@ -6,15 +6,16 @@ import { EmptyState, LoadingSkeleton } from "../../components/admin/AdminStates"
 import { DataTable, type DataColumn } from "../../components/admin/DataTable";
 import { PillButton } from "../../components/admin/PillButton";
 import { orderStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
-import { adminApi, type Order } from "../../lib/api";
-import { mockApplications, mockOrders, mockReports } from "../_data";
+import { useAdminBadges } from "../../components/admin/useAdminBadges";
+import { ApiError, adminApi, sellerDisplayName, type Order } from "../../lib/api";
 import { formatShortDate, formatVnd, normalizedStatusLabel } from "../_utils";
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const [apiMessage, setApiMessage] = useState("");
+  const { pendingSellers, openReports } = useAdminBadges();
 
   useEffect(() => {
     let cancelled = false;
@@ -25,7 +26,7 @@ export default function AdminOrdersPage() {
         if (!cancelled) setOrders(res.data);
       })
       .catch(() => {
-        if (!cancelled) setApiMessage("Orders API chưa sẵn sàng hoặc chưa có quyền admin. Đang hiển thị dữ liệu mẫu.");
+        if (!cancelled) setApiMessage("Orders API chưa sẵn sàng hoặc chưa có quyền admin.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -36,23 +37,13 @@ export default function AdminOrdersPage() {
     };
   }, []);
 
-  const pendingSellers = mockApplications.filter((item) => item.status === "PENDING" || item.status === "PENDING_VERIFICATION").length;
-  const openReports = mockReports.filter((item) => item.status === "OPEN").length;
-
   const markPaid = async (order: Order) => {
     setBusyId(order.id);
     try {
       const res = await adminApi.confirmOrderPayment(order.id);
       setOrders((items) => items.map((item) => (item.id === order.id ? res.data : item)));
-    } catch {
-      setOrders((items) =>
-        items.map((item) =>
-          item.id === order.id
-            ? { ...item, paymentStatus: "PAID", status: "PAID", paidAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-            : item
-        )
-      );
-      setApiMessage("Đã cập nhật giao diện bằng dữ liệu local vì API chưa phản hồi.");
+    } catch (err) {
+      setApiMessage(err instanceof ApiError ? err.message : "Không thể xác nhận thanh toán.");
     } finally {
       setBusyId("");
     }
@@ -86,7 +77,7 @@ export default function AdminOrdersPage() {
         render: (order) => (
           <div>
             <p className="text-[#231a11]">{order.buyer?.name ?? order.buyerId}</p>
-            <p className="text-[12px] text-[#88726c]">{order.seller?.name ?? order.sellerId}</p>
+            <p className="text-[12px] text-[#88726c]">{sellerDisplayName(order.seller, order.sellerId)}</p>
           </div>
         ),
       },

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { Auction } from "../_data/mock-auctions";
+import type { Auction } from "../_types";
 import LiveBadge from "./LiveBadge";
 import CountdownTimer from "./CountdownTimer";
 
@@ -25,13 +25,20 @@ export default function FeaturedAuctionCard({
     >
       {/* Image */}
       <div className="relative w-full md:w-1/2 h-64 md:h-auto overflow-hidden">
-        <Image
-          src={auction.imageUrl}
-          alt={auction.imageAlt}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, 50vw"
-        />
+        {auction.imageUrl ? (
+          <Image
+            src={auction.imageUrl}
+            alt={auction.imageAlt}
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
+        ) : (
+          <div className="admin-image-placeholder h-full">
+            <span className="material-symbols-outlined">image_not_supported</span>
+            <span>Không có ảnh</span>
+          </div>
+        )}
         {/* Gradient overlay at bottom */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 

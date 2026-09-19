@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
-import { useSeller } from "../../context/SellerContext";
 
 function maskEmail(email?: string) {
   if (!email) return "Not provided";
@@ -19,10 +18,16 @@ function maskPhone(phone?: string | null) {
 export default function ProfileRightSidebar() {
   const [scoreVisible, setScoreVisible] = useState(false);
   const { user } = useAuth();
-  const { sellerState } = useSeller();
-  const { sellerScore, verificationStatus } = sellerState;
-  const isBackendSeller = user?.role === "SELLER" || user?.role === "ADMIN";
-  const isSeller = sellerState.isSeller || isBackendSeller;
+  const sellerStatus = user?.sellerStatus ?? (user?.role === "SELLER" ? "APPROVED" : "NONE");
+  const verificationStatus =
+    sellerStatus === "PENDING" || sellerStatus === "PENDING_VERIFICATION"
+      ? "pending"
+      : sellerStatus === "REJECTED"
+      ? "rejected"
+      : sellerStatus === "SUSPENDED"
+      ? "suspended"
+      : "none";
+  const isSeller = user?.role === "SELLER" && sellerStatus === "APPROVED";
 
   const buyerScore = Math.max(0, Math.min(100, user?.reputation ?? 0));
 
@@ -40,10 +45,10 @@ export default function ProfileRightSidebar() {
   const sellerRadius = 45;
   const sellerCircumference = 2 * Math.PI * sellerRadius;
   const sellerDashOffset = scoreVisible
-    ? sellerCircumference - (Math.max(sellerScore, user?.reputation ?? 0) / 100) * sellerCircumference
+    ? sellerCircumference - (buyerScore / 100) * sellerCircumference
     : sellerCircumference;
 
-  const sellerDisplayScore = Math.max(sellerScore, isBackendSeller ? user?.reputation ?? 0 : 0);
+  const sellerDisplayScore = buyerScore;
   const sellerBadge =
     sellerDisplayScore < 60 ? "Starter"
     : sellerDisplayScore < 75 ? "Rising"
@@ -111,7 +116,7 @@ export default function ProfileRightSidebar() {
               You&apos;re a REWORE Seller
             </h3>
             <p className="text-[13px] text-[#55443d] mb-5 leading-relaxed">
-              Seller access is read from your backend role when available.
+              Seller access is unlocked only after admin approval.
             </p>
             <Link
               href="/seller/dashboard"
@@ -134,7 +139,31 @@ export default function ProfileRightSidebar() {
                 Application Under Review
               </h3>
               <p className="text-[13px] text-[#7b2e14] leading-relaxed">
-                Backend does not expose seller verification yet, so this status is local-only.
+                Your application is waiting for admin approval. Selling stays locked until it is approved.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/profile/become-seller/status"
+            className="block w-full text-center font-semibold text-[13px] tracking-wide border border-[#974226] text-[#974226] py-2.5 px-4 rounded-full hover:bg-[#974226] hover:text-white transition-colors"
+          >
+            View Status
+          </Link>
+        </div>
+      ) : verificationStatus === "rejected" || verificationStatus === "suspended" ? (
+        <div className="relative rounded-[20px] p-6 border border-[#ffb4ab]/50 bg-[#ffdad6]/25 overflow-hidden">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-[#ffdad6] flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[20px] text-[#ba1a1a]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                cancel
+              </span>
+            </div>
+            <div>
+              <h3 className="font-[family-name:var(--font-playfair)] text-[18px] font-semibold text-[#3a0b00] mb-1 leading-snug">
+                Seller Access Not Approved
+              </h3>
+              <p className="text-[13px] text-[#7b2e14] leading-relaxed">
+                View the review result and resubmit if needed.
               </p>
             </div>
           </div>
@@ -161,7 +190,7 @@ export default function ProfileRightSidebar() {
               Have items to sell?
             </h3>
             <p className="text-[13px] text-[#7b2e14] mb-5 leading-relaxed">
-              Backend currently registers new users as BUYER, with no seller role update API yet.
+              Submit your seller profile. Admin approval is required before you can list items.
             </p>
             <Link
               href="/profile/become-seller"

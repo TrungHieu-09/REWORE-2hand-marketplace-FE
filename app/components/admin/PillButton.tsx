@@ -2,12 +2,13 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type PillTone = "accent" | "dark" | "green" | "red" | "muted";
+type PillTone = "accent" | "dark" | "green" | "orange" | "red" | "muted";
 
 const toneClass: Record<PillTone, string> = {
   accent: "admin-pill-accent",
   dark: "admin-pill-dark",
   green: "admin-pill-green",
+  orange: "admin-pill-orange",
   red: "admin-pill-red",
   muted: "admin-pill-muted",
 };

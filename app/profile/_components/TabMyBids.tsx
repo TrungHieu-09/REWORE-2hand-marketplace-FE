@@ -68,7 +68,7 @@ export default function TabMyBids() {
           const auction = bid.auction;
           const product = auction?.product;
           const isWinning = bid.isWinning;
-          const image = product?.images?.[0] || "/product1.png";
+          const image = product?.images?.[0];
           return (
             <div
               key={bid.id}
@@ -77,7 +77,13 @@ export default function TabMyBids() {
               } hover:bg-[#fff8f5] transition-colors`}
             >
               <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 bg-[#feeadc]">
-                <Image src={image} alt={product?.title ?? "Auction item"} fill className="object-cover" />
+                {image ? (
+                  <Image src={image} alt={product?.title ?? "Auction item"} fill className="object-cover" />
+                ) : (
+                  <div className="admin-image-placeholder h-full">
+                    <span className="material-symbols-outlined">image_not_supported</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex-1 flex flex-col justify-between py-1">

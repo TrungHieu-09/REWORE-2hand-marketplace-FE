@@ -6,22 +6,22 @@ import { EmptyState, LoadingSkeleton } from "../../components/admin/AdminStates"
 import { DetailDrawer } from "../../components/admin/DetailDrawer";
 import { PillButton } from "../../components/admin/PillButton";
 import { reportStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
-import { adminApi, type ReportStatus, type SellerReport } from "../../lib/api";
-import { mockApplications, mockReports } from "../_data";
+import { adminApi, sellerDisplayName, type ReportStatus, type SellerReport } from "../../lib/api";
 import { formatShortDate, initials, normalizedStatusLabel } from "../_utils";
 
 type ReportTab = "ALL" | ReportStatus;
 
 const TABS: { key: ReportTab; label: string }[] = [
-  { key: "ALL", label: "All" },
-  { key: "OPEN", label: "Open" },
-  { key: "RESOLVED", label: "Resolved" },
-  { key: "DISMISSED", label: "Dismissed" },
+  { key: "ALL", label: "Tất cả" },
+  { key: "OPEN", label: "Đang mở" },
+  { key: "RESOLVED", label: "Đã xử lý" },
+  { key: "DISMISSED", label: "Bỏ qua" },
 ];
 
 export default function AdminReportsPage() {
-  const [tab, setTab] = useState<ReportTab>("ALL");
-  const [reports, setReports] = useState<SellerReport[]>(mockReports);
+  const [tab, setTab] = useState<ReportTab>("OPEN");
+  const [reports, setReports] = useState<SellerReport[]>([]);
+  const [pendingSellers, setPendingSellers] = useState(0);
   const [selected, setSelected] = useState<SellerReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
@@ -31,17 +31,27 @@ export default function AdminReportsPage() {
   useEffect(() => {
     let cancelled = false;
 
-    adminApi
-      .reports({ limit: 50 })
-      .then((res) => {
-        if (!cancelled) setReports(res.data);
-      })
-      .catch(() => {
-        if (!cancelled) setApiMessage("Admin reports API chưa sẵn sàng. Đang hiển thị dữ liệu mẫu.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    Promise.allSettled([
+      adminApi.reports({ limit: 50 }),
+      adminApi.sellerApplications({ status: "PENDING", limit: 1 }),
+    ]).then(([reportResult, sellerResult]) => {
+      if (cancelled) return;
+
+      if (reportResult.status === "fulfilled") {
+        setReports(reportResult.value.data);
+      } else {
+        setReports([]);
+        setApiMessage("Admin reports API chưa sẵn sàng hoặc chưa đăng nhập admin.");
+      }
+
+      if (sellerResult.status === "fulfilled") {
+        setPendingSellers(sellerResult.value.meta.total);
+      } else {
+        setPendingSellers(0);
+      }
+
+      setLoading(false);
+    });
 
     return () => {
       cancelled = true;
@@ -53,7 +63,6 @@ export default function AdminReportsPage() {
     [reports, tab]
   );
 
-  const pendingSellers = mockApplications.filter((item) => item.status === "PENDING" || item.status === "PENDING_VERIFICATION").length;
   const openReports = reports.filter((item) => item.status === "OPEN").length;
 
   const patchReport = async (
@@ -77,12 +86,8 @@ export default function AdminReportsPage() {
       setReports((items) => items.map((item) => (item.id === report.id ? res.data : item)));
       setSelected(res.data);
       setMessage("Đã cập nhật report.");
-    } catch {
-      const nextStatus = action === "dismiss" ? "DISMISSED" : "RESOLVED";
-      const next = { ...report, status: nextStatus as ReportStatus, updatedAt: new Date().toISOString() };
-      setReports((items) => items.map((item) => (item.id === report.id ? next : item)));
-      setSelected(next);
-      setMessage("Đã cập nhật giao diện bằng dữ liệu local.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Không thể cập nhật report.");
     } finally {
       setBusyId("");
     }
@@ -128,11 +133,11 @@ export default function AdminReportsPage() {
                 setMessage("");
               }}
             >
-              <span className="admin-list-avatar">{initials(report.seller?.name)}</span>
+              <span className="admin-list-avatar">{initials(sellerDisplayName(report.seller, "Seller"))}</span>
               <span className="admin-list-main">
                 <span className="admin-list-title">{report.reason}</span>
                 <span className="admin-list-meta">
-                  {report.reporter?.name ?? "Buyer"} báo cáo {report.seller?.name ?? "Seller"} · {formatShortDate(report.createdAt)}
+                  {report.reporter?.name ?? "Buyer"} báo cáo {sellerDisplayName(report.seller, "Seller")} · {formatShortDate(report.createdAt)}
                 </span>
               </span>
               <span className="admin-list-actions">
@@ -159,7 +164,7 @@ export default function AdminReportsPage() {
               </div>
               <div className="admin-detail-box">
                 <span className="admin-detail-label">Seller bị báo cáo</span>
-                <span className="admin-detail-value">{selected.seller?.name ?? selected.sellerId}</span>
+                <span className="admin-detail-value">{sellerDisplayName(selected.seller, selected.sellerId)}</span>
               </div>
               <div className="admin-detail-box">
                 <span className="admin-detail-label">Ngày tạo</span>

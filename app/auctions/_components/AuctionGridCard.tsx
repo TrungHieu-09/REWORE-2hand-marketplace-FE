@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { Auction } from "../_data/mock-auctions";
+import type { Auction } from "../_types";
 import LiveBadge from "./LiveBadge";
 import CountdownTimer from "./CountdownTimer";
 
@@ -20,13 +20,20 @@ export default function AuctionGridCard({ auction }: AuctionGridCardProps) {
     <article className="group cursor-pointer flex flex-col p-3 -m-3 rounded-2xl transition-all duration-300 hover:bg-white hover:shadow-[0_12px_32px_-8px_rgba(43,33,24,0.12)] hover:-translate-y-1">
       {/* Image container */}
       <div className="relative w-full aspect-[4/5] rounded-[20px] overflow-hidden mb-4 bg-[#feeadc]">
-        <Image
-          src={auction.imageUrl}
-          alt={auction.imageAlt}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+        {auction.imageUrl ? (
+          <Image
+            src={auction.imageUrl}
+            alt={auction.imageAlt}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="admin-image-placeholder h-full">
+            <span className="material-symbols-outlined">image_not_supported</span>
+            <span>Không có ảnh</span>
+          </div>
+        )}
 
         {/* Gradient for readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

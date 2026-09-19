@@ -1,21 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Auction, AuctionCategory } from "./_data/mock-auctions";
-import { FEATURED_AUCTIONS, GRID_AUCTIONS } from "./_data/mock-auctions";
+import type { Auction, AuctionCategory } from "./_types";
 import CategoryFilterBar from "./_components/CategoryFilterBar";
 import FeaturedAuctionCard from "./_components/FeaturedAuctionCard";
 import AuctionGridCard from "./_components/AuctionGridCard";
 import ReputationSidebar from "./_components/ReputationSidebar";
 import { ApiError, auctionsApi, type Auction as ApiAuction } from "@/app/lib/api";
-
-const FALLBACK_IMAGES = [
-  "/product1.png",
-  "/product2.png",
-  "/product3.png",
-  "/shop-leather-bag.png",
-  "/shop-denim-jeans.png",
-];
 
 function secondsUntil(iso: string) {
   return Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000));
@@ -31,14 +22,14 @@ function startsInLabel(iso: string) {
   return `${Math.ceil(hours / 24)}d`;
 }
 
-function mapApiAuction(auction: ApiAuction, index: number): Auction {
+function mapApiAuction(auction: ApiAuction): Auction {
   const product = auction.product;
   const isLive = auction.status === "LIVE";
   return {
     id: auction.id,
     title: product?.title ?? "REWORE Auction",
     category: product?.category ?? "Other",
-    imageUrl: product?.images?.[0] || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
+    imageUrl: product?.images?.[0],
     imageAlt: product?.title ?? "REWORE auction item",
     status: isLive ? "live" : auction.status === "UPCOMING" ? "starts_soon" : "upcoming",
     currentBid: auction.currentBid,
@@ -51,10 +42,7 @@ function mapApiAuction(auction: ApiAuction, index: number): Auction {
 
 export default function LiveAuctionsPage() {
   const [activeCategory, setActiveCategory] = useState<AuctionCategory>("All");
-  const [auctions, setAuctions] = useState<Auction[]>([
-    ...FEATURED_AUCTIONS,
-    ...GRID_AUCTIONS,
-  ]);
+  const [auctions, setAuctions] = useState<Auction[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [apiMessage, setApiMessage] = useState("");
 
@@ -71,7 +59,7 @@ export default function LiveAuctionsPage() {
           setApiMessage(
             err instanceof ApiError
               ? err.message
-              : "Could not load auctions from API. Showing demo data."
+              : "Could not load auctions from API."
           );
         }
       })

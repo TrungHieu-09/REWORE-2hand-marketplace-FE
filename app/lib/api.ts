@@ -8,8 +8,17 @@ export const AUTH_FLAG_KEY = "rewore_authed";
 export const AUTH_USER_KEY = "rewore_user";
 export const PENDING_OTP_EMAIL_KEY = "rewore_pending_otp_email";
 
+export function apiAssetUrl(value?: string | null, fallback = "") {
+  if (!value) return fallback;
+  if (/^(https?:|data:|blob:)/i.test(value)) return value;
+
+  const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
 export type Role = "BUYER" | "SELLER" | "ADMIN";
 export type ProductStatus = "ACTIVE" | "SOLD" | "AUCTION" | "INACTIVE" | "HIDDEN" | "REMOVED";
+export type ProductAvailabilityStatus = "upcoming_drop" | "available" | "held" | "sold";
 export type ProductCondition = "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR";
 export type AuctionStatus = "UPCOMING" | "LIVE" | "ENDED" | "CANCELLED";
 export type SellerApplicationStatus =
@@ -78,11 +87,47 @@ export type User = {
   totalSales: number;
   totalBids: number;
   isVerified: boolean;
+  isBanned?: boolean;
+  bannedReason?: string | null;
+  bannedAt?: string | null;
   sellerStatus?: SellerStatus;
   sellerApprovedAt?: string | null;
   sellerSuspendedReason?: string | null;
+  sellerProfile?: {
+    id: string;
+    shopName: string;
+    shop_name?: string;
+    idCardFrontUrl?: string | null;
+    idCardBackUrl?: string | null;
+    selfieUrl?: string | null;
+    id_card_front_url?: string | null;
+    id_card_back_url?: string | null;
+    selfie_url?: string | null;
+    status: SellerApplicationStatus;
+    pickupAddress?: string | null;
+    bankName?: string | null;
+    bankAccountName?: string | null;
+    createdAt?: string;
+  } | null;
   createdAt: string;
 };
+
+export type SellerPublic = Pick<User, "id" | "name"> &
+  Partial<Pick<User, "email" | "avatar" | "reputation" | "isVerified" | "role" | "sellerProfile" | "sellerStatus">> & {
+    shopName?: string | null;
+    shop_name?: string | null;
+  };
+
+export function sellerDisplayName(seller?: SellerPublic | null, fallback = "REWORE Seller") {
+  return (
+    seller?.sellerProfile?.shopName ||
+    seller?.sellerProfile?.shop_name ||
+    seller?.shopName ||
+    seller?.shop_name ||
+    seller?.name ||
+    fallback
+  );
+}
 
 export type AuthUser = Partial<User> & {
   id: string;
@@ -123,13 +168,15 @@ export type Product = {
   category: string;
   condition: ProductCondition;
   status: ProductStatus;
+  quantity?: number;
+  availabilityStatus?: ProductAvailabilityStatus;
   brand: string | null;
   size: string | null;
   color: string | null;
   tags: string[];
   viewCount: number;
   sellerId: string;
-  seller?: Pick<User, "id" | "name" | "avatar" | "reputation" | "isVerified">;
+  seller?: SellerPublic;
   _count?: {
     wishlistItems: number;
   };
@@ -150,7 +197,7 @@ export type Auction = {
   status: AuctionStatus;
   winnerId: string | null;
   product?: Product;
-  seller?: Pick<User, "id" | "name" | "avatar" | "reputation" | "isVerified">;
+  seller?: SellerPublic;
   bids?: Bid[];
   _count?: {
     bids: number;
@@ -186,7 +233,7 @@ export type Order = {
   shippedAt: string | null;
   deliveredAt: string | null;
   buyer?: Pick<User, "id" | "name" | "avatar" | "email">;
-  seller?: Pick<User, "id" | "name" | "avatar" | "email">;
+  seller?: SellerPublic;
   product?: Pick<Product, "id" | "title" | "images" | "category" | "price"> | null;
   auction?: Pick<Auction, "id" | "currentBid" | "endTime"> | null;
   createdAt: string;
@@ -205,12 +252,17 @@ export type SellerApplication = {
   id: string;
   userId: string;
   shopName: string;
+  shop_name?: string;
   legalName?: string;
+  legal_name?: string;
   idCardFrontImage?: string;
   idCardBackImage?: string;
   idCardFrontUrl?: string;
   idCardBackUrl?: string;
+  id_card_front_url?: string;
+  id_card_back_url?: string;
   selfieUrl?: string | null;
+  selfie_url?: string | null;
   phone?: string;
   pickupAddress: string;
   bankName: string | null;
@@ -233,6 +285,29 @@ export type SellerApplication = {
   updatedAt: string;
 };
 
+export type CreateSellerApplicationPayload = {
+  shopName: string;
+  legalName: string;
+  idCardFrontImage: File;
+  idCardBackImage: File;
+  selfieImage?: File | null;
+  phone: string;
+  pickupAddress: string;
+  bankName?: string;
+  bankAccountNumber: string;
+  bankAccountHolder: string;
+  vietQr?: string;
+  sellingDescription?: string;
+  acceptedSellerTerms: true;
+};
+
+export type SellerApplicationResponse = {
+  success: true;
+  message?: string;
+  sellerStatus: SellerStatus | SellerApplicationStatus;
+  application: SellerApplication;
+};
+
 export type SellerReport = {
   id: string;
   reporterId: string;
@@ -246,7 +321,7 @@ export type SellerReport = {
   resolutionNote?: string | null;
   reporter?: Pick<User, "id" | "email" | "name" | "avatar">;
   resolvedByAdmin?: Pick<User, "id" | "email" | "name">;
-  seller?: Pick<User, "id" | "email" | "name" | "avatar" | "role" | "sellerStatus">;
+  seller?: SellerPublic;
   createdAt: string;
   updatedAt: string;
 };
@@ -256,6 +331,7 @@ export type ProductListQuery = {
   limit?: number;
   category?: string;
   condition?: ProductCondition;
+  status?: ProductStatus;
   minPrice?: number;
   maxPrice?: number;
   search?: string;
@@ -282,6 +358,9 @@ export type OrderListQuery = PageQuery & {
 
 export type UserListQuery = PageQuery & {
   search?: string;
+  status?: "active" | "banned";
+  sortBy?: "createdAt" | "email" | "name" | "role";
+  sortOrder?: "asc" | "desc";
 };
 
 export type AdminApplicationQuery = PageQuery & {
@@ -292,13 +371,21 @@ export type AdminReportQuery = PageQuery & {
   status?: ReportStatus | "ALL";
 };
 
+export type AdminProductQuery = PageQuery & {
+  status?: ProductStatus | "ALL";
+  sellerId?: string;
+  sortBy?: "createdAt" | "price" | "title" | "status" | "viewCount" | "availabilityStatus";
+  sortOrder?: "asc" | "desc";
+};
+
 export type CreateProductPayload = {
   title: string;
   description: string;
   price: number;
   category: string;
   condition: ProductCondition;
-  images?: string[];
+  quantity?: 1;
+  images?: Array<string | File>;
   brand?: string;
   size?: string;
   color?: string;
@@ -392,6 +479,32 @@ function toQueryString(params?: Record<string, string | number | undefined>) {
   return qs ? `?${qs}` : "";
 }
 
+function productRequestBody(payload: Partial<CreateProductPayload>, forceFormData = false) {
+  const images = payload.images ?? [];
+  const fileImages =
+    typeof File !== "undefined" ? images.filter((image): image is File => image instanceof File) : [];
+
+  if (!forceFormData && fileImages.length === 0) return JSON.stringify(payload);
+
+  const formData = new FormData();
+  if (payload.title !== undefined) formData.append("title", payload.title);
+  if (payload.description !== undefined) formData.append("description", payload.description);
+  if (payload.price !== undefined) formData.append("price", String(payload.price));
+  if (payload.category !== undefined) formData.append("category", payload.category);
+  if (payload.condition !== undefined) formData.append("condition", payload.condition);
+  if (payload.quantity !== undefined) formData.append("quantity", String(payload.quantity));
+  if (payload.brand !== undefined) formData.append("brand", payload.brand);
+  if (payload.size !== undefined) formData.append("size", payload.size);
+  if (payload.color !== undefined) formData.append("color", payload.color);
+  if (payload.tags !== undefined) formData.append("tags", JSON.stringify(payload.tags));
+
+  const imageUrls = images.filter((image): image is string => typeof image === "string");
+  if (imageUrls.length) formData.append("images", JSON.stringify(imageUrls));
+  fileImages.forEach((file) => formData.append("productImages", file));
+
+  return formData;
+}
+
 async function readJson<T>(response: Response): Promise<T> {
   const text = await response.text();
   if (!text) return {} as T;
@@ -404,11 +517,12 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const { auth = false, headers, body, ...init } = options;
   const token = auth ? getStoredToken() : null;
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     body,
     headers: {
-      "Content-Type": "application/json",
+      ...(!isFormData ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
@@ -498,13 +612,13 @@ export const productsApi = {
     apiRequest<ApiItemResponse<Product>>("/api/products", {
       method: "POST",
       auth: true,
-      body: JSON.stringify(payload),
+      body: productRequestBody({ ...payload, quantity: 1 }, true),
     }),
   update: (id: string, payload: Partial<CreateProductPayload>) =>
     apiRequest<ApiItemResponse<Product>>(`/api/products/${id}`, {
       method: "PUT",
       auth: true,
-      body: JSON.stringify(payload),
+      body: productRequestBody(payload, true),
     }),
   delete: (id: string) =>
     apiRequest<{ success: true; message: string }>(`/api/products/${id}`, {
@@ -589,6 +703,35 @@ export const wishlistApi = {
     ),
 };
 
+export const sellerApi = {
+  currentApplication: () =>
+    apiRequest<SellerApplicationResponse>("/api/seller/application", {
+      auth: true,
+    }),
+  submitApplication: (payload: CreateSellerApplicationPayload) => {
+    const formData = new FormData();
+    formData.append("shopName", payload.shopName);
+    formData.append("legalName", payload.legalName);
+    formData.append("idCardFrontImage", payload.idCardFrontImage);
+    formData.append("idCardBackImage", payload.idCardBackImage);
+    if (payload.selfieImage) formData.append("selfieImage", payload.selfieImage);
+    formData.append("phone", payload.phone);
+    formData.append("pickupAddress", payload.pickupAddress);
+    if (payload.bankName) formData.append("bankName", payload.bankName);
+    formData.append("bankAccountNumber", payload.bankAccountNumber);
+    formData.append("bankAccountHolder", payload.bankAccountHolder);
+    if (payload.vietQr) formData.append("vietQr", payload.vietQr);
+    if (payload.sellingDescription) formData.append("sellingDescription", payload.sellingDescription);
+    formData.append("acceptedSellerTerms", String(payload.acceptedSellerTerms));
+
+    return apiRequest<SellerApplicationResponse>("/api/seller/application", {
+      method: "POST",
+      auth: true,
+      body: formData,
+    });
+  },
+};
+
 export const adminApi = {
   sellerApplications: (query?: AdminApplicationQuery) =>
     apiRequest<ApiListResponse<SellerApplication>>(
@@ -646,9 +789,36 @@ export const adminApi = {
     apiRequest<ApiListResponse<User>>(`/api/admin/users${toQueryString(query)}`, {
       auth: true,
     }),
-  products: (query?: ProductListQuery) =>
-    apiRequest<ApiListResponse<Product>>(`/api/admin/products${toQueryString(query)}`, {
+  banUser: (id: string, reason: string) =>
+    apiRequest<ApiItemResponse<User>>(`/api/admin/users/${id}/ban`, {
+      method: "PATCH",
       auth: true,
+      body: JSON.stringify({ reason }),
+    }),
+  unbanUser: (id: string) =>
+    apiRequest<ApiItemResponse<User>>(`/api/admin/users/${id}/unban`, {
+      method: "PATCH",
+      auth: true,
+    }),
+  products: (query?: AdminProductQuery) =>
+    apiRequest<ApiListResponse<Product>>(
+      `/api/admin/products${toQueryString({
+        ...query,
+        status: query?.status === "ALL" ? undefined : query?.status,
+      })}`,
+      { auth: true }
+    ),
+  hideProduct: (id: string, reason: string) =>
+    apiRequest<ApiItemResponse<Product>>(`/api/admin/products/${id}/hide`, {
+      method: "PATCH",
+      auth: true,
+      body: JSON.stringify({ reason }),
+    }),
+  removeProduct: (id: string, reason: string) =>
+    apiRequest<ApiItemResponse<Product>>(`/api/admin/products/${id}`, {
+      method: "DELETE",
+      auth: true,
+      body: JSON.stringify({ reason }),
     }),
   orders: (query?: PageQuery & { paymentStatus?: PaymentStatus; orderStatus?: OrderStatus }) =>
     apiRequest<ApiListResponse<Order>>(`/api/admin/orders${toQueryString(query)}`, {

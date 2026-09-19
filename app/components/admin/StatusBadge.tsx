@@ -36,3 +36,27 @@ export function orderStatusTone(status: string): BadgeTone {
   if (status === "CANCELLED" || status === "REFUNDED") return "red";
   return "orange";
 }
+
+export function userStatusTone(isBanned?: boolean): BadgeTone {
+  return isBanned ? "red" : "green";
+}
+
+export function roleTone(role: string): BadgeTone {
+  if (role === "ADMIN") return "red";
+  if (role === "SELLER") return "orange";
+  return "neutral";
+}
+
+export function productStatusTone(status: string): BadgeTone {
+  if (status === "ACTIVE") return "green";
+  if (status === "HIDDEN" || status === "INACTIVE") return "orange";
+  if (status === "REMOVED" || status === "SOLD") return "red";
+  return "neutral";
+}
+
+export function availabilityStatusTone(status?: string): BadgeTone {
+  if (status === "available") return "green";
+  if (status === "upcoming_drop" || status === "held") return "orange";
+  if (status === "sold") return "red";
+  return "neutral";
+}

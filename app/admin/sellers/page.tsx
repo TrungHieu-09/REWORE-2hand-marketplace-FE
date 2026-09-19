@@ -1,50 +1,62 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { AdminImage } from "../../components/admin/AdminImage";
 import { AdminShell } from "../../components/admin/AdminShell";
 import { EmptyState, LoadingSkeleton } from "../../components/admin/AdminStates";
 import { DetailDrawer } from "../../components/admin/DetailDrawer";
 import { PillButton } from "../../components/admin/PillButton";
 import { sellerStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
 import { adminApi, type SellerApplication, type SellerApplicationStatus } from "../../lib/api";
-import { mockApplications, mockReports } from "../_data";
 import { formatShortDate, initials, normalizedStatusLabel } from "../_utils";
 
 type SellerTab = "ALL" | SellerApplicationStatus;
 
 const TABS: { key: SellerTab; label: string }[] = [
-  { key: "ALL", label: "All" },
-  { key: "PENDING", label: "Pending" },
-  { key: "APPROVED", label: "Approved" },
-  { key: "REJECTED", label: "Rejected" },
+  { key: "ALL", label: "Tất cả" },
+  { key: "PENDING", label: "Đang chờ" },
+  { key: "APPROVED", label: "Đã duyệt" },
+  { key: "REJECTED", label: "Từ chối" },
 ];
 
 export default function AdminSellersPage() {
-  const [tab, setTab] = useState<SellerTab>("ALL");
+  const [tab, setTab] = useState<SellerTab>("PENDING");
   const [loading, setLoading] = useState(true);
-  const [applications, setApplications] = useState<SellerApplication[]>(mockApplications);
+  const [applications, setApplications] = useState<SellerApplication[]>([]);
+  const [openReports, setOpenReports] = useState(0);
   const [selected, setSelected] = useState<SellerApplication | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [pageMessage, setPageMessage] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [detailLoadingId, setDetailLoadingId] = useState("");
   const [apiMessage, setApiMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
-    adminApi
-      .sellerApplications({ limit: 50 })
-      .then((res) => {
-        if (!cancelled) setApplications(res.data);
-      })
-      .catch(() => {
-        if (!cancelled) setApiMessage("Admin seller API chưa sẵn sàng. Đang hiển thị dữ liệu mẫu.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    Promise.allSettled([
+      adminApi.sellerApplications({ limit: 50 }),
+      adminApi.reports({ status: "OPEN", limit: 1 }),
+    ]).then(([sellerResult, reportResult]) => {
+      if (cancelled) return;
+
+      if (sellerResult.status === "fulfilled") {
+        setApplications(sellerResult.value.data);
+      } else {
+        setApplications([]);
+        setApiMessage("Admin seller API chưa sẵn sàng hoặc chưa đăng nhập admin.");
+      }
+
+      if (reportResult.status === "fulfilled") {
+        setOpenReports(reportResult.value.meta.total);
+      } else {
+        setOpenReports(0);
+      }
+
+      setLoading(false);
+    });
 
     return () => {
       cancelled = true;
@@ -52,16 +64,27 @@ export default function AdminSellersPage() {
   }, []);
 
   const filtered = useMemo(
-    () => (tab === "ALL" ? applications : applications.filter((item) => item.status === tab)),
+    () =>
+      tab === "ALL"
+        ? applications
+        : applications.filter((item) =>
+            tab === "PENDING"
+              ? item.status === "PENDING" || item.status === "PENDING_VERIFICATION"
+              : item.status === tab
+          ),
     [applications, tab]
   );
 
   const pendingSellers = applications.filter((item) => item.status === "PENDING" || item.status === "PENDING_VERIFICATION").length;
-  const openReports = mockReports.filter((item) => item.status === "OPEN").length;
 
-  const updateApplication = (next: SellerApplication) => {
-    setApplications((items) => items.map((item) => (item.id === next.id ? next : item)));
-    setSelected(next);
+  const returnToReviewList = (message: string) => {
+    setSelected(null);
+    setRejecting(false);
+    setReason("");
+    setActionMessage("");
+    setPageMessage(message);
+    setTab("PENDING");
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   };
 
   const legalName = (application: SellerApplication) =>
@@ -69,20 +92,56 @@ export default function AdminSellersPage() {
   const bankHolder = (application: SellerApplication) =>
     application.bankAccountHolder ?? application.bankAccountName ?? "Not provided";
   const idFront = (application: SellerApplication) =>
-    application.idCardFrontImage ?? application.idCardFrontUrl ?? "/shop-blazer.png";
+    application.id_card_front_url ?? application.idCardFrontUrl ?? application.idCardFrontImage ?? "";
   const idBack = (application: SellerApplication) =>
-    application.idCardBackImage ?? application.idCardBackUrl ?? "/shop-trench-coat.png";
+    application.id_card_back_url ?? application.idCardBackUrl ?? application.idCardBackImage ?? "";
+  const selfie = (application: SellerApplication) =>
+    application.selfie_url ?? application.selfieUrl ?? "";
+
+  const openApplication = async (application: SellerApplication) => {
+    setSelected(application);
+    setRejecting(false);
+    setReason("");
+    setActionMessage("");
+    setDetailLoadingId(application.id);
+
+    try {
+      const res = await adminApi.sellerApplication(application.id);
+      setSelected(res.data);
+      setApplications((items) => items.map((item) => (item.id === res.data.id ? { ...item, ...res.data } : item)));
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Không thể tải ảnh xác minh.");
+    } finally {
+      setDetailLoadingId("");
+    }
+  };
+
+  const refreshIdentityImages = async () => {
+    if (!selected) return;
+
+    setDetailLoadingId(selected.id);
+    setActionMessage("");
+    try {
+      const res = await adminApi.sellerApplication(selected.id);
+      setSelected(res.data);
+      setApplications((items) => items.map((item) => (item.id === res.data.id ? { ...item, ...res.data } : item)));
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Không thể tải lại ảnh xác minh.");
+    } finally {
+      setDetailLoadingId("");
+    }
+  };
 
   const approve = async (application: SellerApplication) => {
     setBusyId(application.id);
     setActionMessage("");
+    setPageMessage("");
     try {
       const res = await adminApi.approveSellerApplication(application.id);
-      updateApplication(res.data);
-      setActionMessage("Đã duyệt seller.");
-    } catch {
-      updateApplication({ ...application, status: "APPROVED", reviewedAt: new Date().toISOString() });
-      setActionMessage("Đã cập nhật giao diện duyệt seller bằng dữ liệu local.");
+      setApplications((items) => items.map((item) => (item.id === res.data.id ? res.data : item)));
+      returnToReviewList("Đã duyệt seller. Hồ sơ đã được chuyển khỏi danh sách pending.");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Không thể duyệt seller.");
     } finally {
       setBusyId("");
     }
@@ -96,21 +155,15 @@ export default function AdminSellersPage() {
 
     setBusyId(application.id);
     setActionMessage("");
+    setPageMessage("");
     try {
       const res = await adminApi.rejectSellerApplication(application.id, reason.trim());
-      updateApplication(res.data);
-      setActionMessage("Đã từ chối hồ sơ seller.");
-    } catch {
-      updateApplication({
-        ...application,
-        status: "REJECTED",
-        rejectionReason: reason.trim(),
-        reviewedAt: new Date().toISOString(),
-      });
-      setActionMessage("Đã cập nhật giao diện từ chối bằng dữ liệu local.");
+      setApplications((items) => items.map((item) => (item.id === res.data.id ? res.data : item)));
+      returnToReviewList("Đã từ chối hồ sơ seller. Hồ sơ đã được chuyển khỏi danh sách pending.");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Không thể từ chối hồ sơ seller.");
     } finally {
       setBusyId("");
-      setRejecting(false);
     }
   };
 
@@ -120,6 +173,7 @@ export default function AdminSellersPage() {
         <div>
           <h1 className="admin-page-title">Duyệt Seller</h1>
           <p className="admin-page-sub">Xem CCCD, đối chiếu tên tài khoản ngân hàng và duyệt thủ công.</p>
+          {pageMessage && <p className="sp-foryou-sub" style={{ color: "#556138" }}>{pageMessage}</p>}
           {apiMessage && <p className="sp-foryou-sub" style={{ color: "#ba1a1a" }}>{apiMessage}</p>}
         </div>
         <span className="sp-count-badge">{filtered.length} hồ sơ</span>
@@ -149,12 +203,7 @@ export default function AdminSellersPage() {
             <button
               key={application.id}
               className="admin-list-card"
-              onClick={() => {
-                setSelected(application);
-                setRejecting(false);
-                setReason("");
-                setActionMessage("");
-              }}
+              onClick={() => openApplication(application)}
             >
               <span className="admin-list-avatar">{initials(application.shopName)}</span>
               <span className="admin-list-main">
@@ -210,17 +259,31 @@ export default function AdminSellersPage() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between gap-3">
+              <span className="admin-detail-label">Ảnh xác minh có thời hạn 5 phút</span>
+              <PillButton tone="muted" disabled={detailLoadingId === selected.id} onClick={refreshIdentityImages}>
+                <span className="material-symbols-outlined text-[16px]">refresh</span>
+                Tải lại ảnh
+              </PillButton>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <span className="admin-detail-label">CCCD mặt trước</span>
                 <div className="admin-id-image">
-                  <Image src={idFront(selected)} alt="ID card front" fill style={{ objectFit: "cover" }} sizes="260px" />
+                  <AdminImage src={idFront(selected)} alt="CCCD mặt trước" />
                 </div>
               </div>
               <div>
                 <span className="admin-detail-label">CCCD mặt sau</span>
                 <div className="admin-id-image">
-                  <Image src={idBack(selected)} alt="ID card back" fill style={{ objectFit: "cover" }} sizes="260px" />
+                  <AdminImage src={idBack(selected)} alt="CCCD mặt sau" />
+                </div>
+              </div>
+              <div>
+                <span className="admin-detail-label">Selfie xác minh</span>
+                <div className="admin-id-image">
+                  <AdminImage src={selfie(selected)} alt="Selfie xác minh" />
                 </div>
               </div>
             </div>

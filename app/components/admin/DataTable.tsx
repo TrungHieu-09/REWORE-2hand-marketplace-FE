@@ -12,10 +12,12 @@ export function DataTable<T extends { id: string }>({
   rows,
   columns,
   empty,
+  onRowClick,
 }: {
   rows: T[];
   columns: DataColumn<T>[];
   empty: ReactNode;
+  onRowClick?: (row: T) => void;
 }) {
   if (rows.length === 0) return <>{empty}</>;
 
@@ -31,7 +33,11 @@ export function DataTable<T extends { id: string }>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id}>
+            <tr
+              key={row.id}
+              className={onRowClick ? "admin-table-clickable-row" : undefined}
+              onClick={() => onRowClick?.(row)}
+            >
               {columns.map((column) => (
                 <td key={column.key}>{column.render(row)}</td>
               ))}

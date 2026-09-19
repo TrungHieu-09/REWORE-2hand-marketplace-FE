@@ -33,12 +33,14 @@ export default function TrustScore() {
           </div>
 
           <div className="trust-visual">
-            <div className="trust-card-demo animate-in">
+            <div className="trust-card-preview animate-in">
               <div className="trust-profile">
-                <div className="trust-avatar">MH</div>
+                <div className="trust-avatar">
+                  <span className="material-symbols-outlined">person</span>
+                </div>
                 <div>
-                  <p className="trust-name">Minh Hương</p>
-                  <p className="trust-since">Member since 2023</p>
+                  <p className="trust-name">Your profile</p>
+                  <p className="trust-since">Synced from your account activity</p>
                 </div>
                 <div className="trust-badge-verified">
                   <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>verified</span>
@@ -48,20 +50,16 @@ export default function TrustScore() {
                 <div className="trust-score-ring">
                   <svg viewBox="0 0 80 80" className="score-svg">
                     <circle cx="40" cy="40" r="34" fill="none" stroke="#f2dfd1" strokeWidth="8" />
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="#974226" strokeWidth="8"
-                      strokeDasharray="196" strokeDashoffset="20" strokeLinecap="round"
-                      transform="rotate(-90 40 40)" />
                   </svg>
-                  <span className="score-num">4.9</span>
+                  <span className="score-num">--</span>
                 </div>
                 <div className="trust-score-info">
                   <p className="score-label">Trust Score</p>
-                  <div className="score-stars">★★★★★</div>
-                  <p className="score-trades">47 trades completed</p>
+                  <p className="score-trades">Available after real marketplace transactions.</p>
                 </div>
               </div>
               <div className="trust-metrics">
-                {[{ val: "100%", lbl: "Response rate" }, { val: "24h", lbl: "Avg. ship time" }, { val: "0", lbl: "Disputes" }].map((m) => (
+                {[{ val: "--", lbl: "Response rate" }, { val: "--", lbl: "Avg. ship time" }, { val: "--", lbl: "Disputes" }].map((m) => (
                   <div className="metric" key={m.lbl}>
                     <span className="metric-val">{m.val}</span>
                     <span className="metric-lbl">{m.lbl}</span>
@@ -69,8 +67,7 @@ export default function TrustScore() {
                 ))}
               </div>
               <div className="trust-reviews-preview">
-                <p className="review-text">&ldquo;Absolutely love the blazer! Exactly as described, packed beautifully. Will buy again!&rdquo;</p>
-                <p className="review-author">— Lan Anh T.</p>
+                <p className="review-text">Reviews will appear here after completed orders.</p>
               </div>
             </div>
           </div>

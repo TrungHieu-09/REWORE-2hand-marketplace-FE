@@ -7,16 +7,15 @@ import { EmptyState, LoadingSkeleton } from "../components/admin/AdminStates";
 import { GrowthChart, type GrowthPoint } from "../components/admin/GrowthChart";
 import { StatCard } from "../components/admin/StatCard";
 import { adminApi, type Order, type SellerApplication, type SellerReport, type User } from "../lib/api";
-import { growthData, mockApplications, mockOrders, mockReports, mockUsers } from "./_data";
 import { formatVnd } from "./_utils";
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [applications, setApplications] = useState<SellerApplication[]>(mockApplications);
-  const [reports, setReports] = useState<SellerReport[]>(mockReports);
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
-  const [chartData, setChartData] = useState<GrowthPoint[]>(growthData);
+  const [users, setUsers] = useState<User[]>([]);
+  const [applications, setApplications] = useState<SellerApplication[]>([]);
+  const [reports, setReports] = useState<SellerReport[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [chartData, setChartData] = useState<GrowthPoint[]>([]);
   const [overview, setOverview] = useState<{
     total_users: number;
     total_sellers_approved: number;
@@ -56,7 +55,7 @@ export default function AdminDashboardPage() {
       }
 
       if ([userResult, appResult, reportResult, orderResult, statsResult, growthResult].some((result) => result.status === "rejected")) {
-        setApiMessage("Admin API chưa sẵn sàng hoặc chưa đăng nhập admin. Đang hiển thị dữ liệu mẫu.");
+        setApiMessage("Một số Admin API chưa sẵn sàng hoặc chưa đăng nhập admin.");
       }
       setLoading(false);
     });
@@ -141,7 +140,13 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      <GrowthChart data={chartData} />
+      {chartData.length > 0 ? (
+        <GrowthChart data={chartData} />
+      ) : (
+        <section className="admin-chart-card">
+          <EmptyState icon="monitoring" title="Chưa có dữ liệu tăng trưởng" desc="Biểu đồ sẽ xuất hiện khi backend trả dữ liệu thống kê theo ngày." />
+        </section>
+      )}
     </AdminShell>
   );
 }

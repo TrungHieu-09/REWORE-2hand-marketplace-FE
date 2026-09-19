@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "../../components/Navbar";
 import { useAuth } from "../../context/AuthContext";
-import { useSeller } from "../../context/SellerContext";
 import {
   ApiError,
   auctionsApi,
@@ -17,20 +17,27 @@ import {
 
 export default function SellerDashboard() {
   const { user } = useAuth();
-  const { sellerState } = useSeller();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const sellerScore = Math.max(sellerState.sellerScore, user?.reputation ?? 0);
+  const sellerStatus = user?.sellerStatus ?? (user?.role === "SELLER" ? "APPROVED" : "NONE");
+  const sellerScore = user?.reputation ?? 0;
   const LIVE_THRESHOLD = 75;
   const canLiveAuction = sellerScore >= LIVE_THRESHOLD;
-  const isSeller = sellerState.isSeller || user?.role === "SELLER" || user?.role === "ADMIN";
+  const isSeller = user?.role === "SELLER" && sellerStatus === "APPROVED";
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (user?.role === "ADMIN") router.replace("/admin");
+  }, [router, user?.role]);
+
+  useEffect(() => {
+    if (!user?.id || !isSeller) {
+      return;
+    }
     let cancelled = false;
 
     Promise.allSettled([
@@ -60,7 +67,7 @@ export default function SellerDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [isSeller, user?.id]);
 
   const paidRevenue = orders
     .filter((order) => ["PAID", "SHIPPED", "DELIVERED"].includes(order.status))
@@ -70,9 +77,9 @@ export default function SellerDashboard() {
     {
       icon: "add_circle",
       title: "List an Item",
-      description: "Product create API is ready; this screen still needs a listing form.",
+      description: "Create a product with multipart image upload.",
       available: isSeller,
-      href: "#",
+      href: "/seller/products/new",
       stat: `${products.length} listings`,
     },
     {
@@ -80,7 +87,7 @@ export default function SellerDashboard() {
       title: "My Listings",
       description: "Loaded from /api/products filtered by your seller id.",
       available: true,
-      href: "#",
+      href: "/seller/listings",
       stat: `${products.filter((product) => product.status === "ACTIVE").length} active`,
     },
     {
@@ -108,6 +115,27 @@ export default function SellerDashboard() {
       <Navbar />
       <div className="min-h-screen bg-[#fff8f5] pt-24 pb-20">
         <main className="max-w-[1280px] mx-auto px-5 md:px-12">
+          {!isSeller ? (
+            <div className="bg-white rounded-[24px] shadow-[0_12px_48px_-8px_rgba(43,33,24,0.09)] border border-[#dbc1b9]/30 p-8 md:p-12 text-center max-w-[620px] mx-auto">
+              <div className="w-16 h-16 rounded-full bg-[#f2dfd1] flex items-center justify-center mx-auto mb-5">
+                <span className="material-symbols-outlined text-[30px] text-[#974226]">hourglass_empty</span>
+              </div>
+              <h1 className="font-[family-name:var(--font-playfair)] text-[32px] font-semibold text-[#231a11] mb-3">
+                Seller dashboard is locked
+              </h1>
+              <p className="text-[15px] text-[#55433d] leading-relaxed mb-7">
+                You can only access selling tools after your seller profile is approved by admin.
+              </p>
+              <Link
+                href={sellerStatus === "PENDING" || sellerStatus === "PENDING_VERIFICATION" || sellerStatus === "REJECTED" || sellerStatus === "SUSPENDED" ? "/profile/become-seller/status" : "/profile/become-seller"}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#974226] px-6 py-3 text-[13px] font-semibold text-white hover:bg-[#b65a3c] transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">verified_user</span>
+                {sellerStatus === "NONE" ? "Apply to become seller" : "View seller status"}
+              </Link>
+            </div>
+          ) : (
+            <>
           <div className="mb-10 opacity-0 animate-fade-in-up">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-[#974226] flex items-center justify-center">
@@ -191,10 +219,10 @@ export default function SellerDashboard() {
                   <p className="text-[13px] text-[#88726c] leading-relaxed">{f.description}</p>
                 </div>
                 {f.available && (
-                  <a href={f.href} className="mt-auto flex items-center gap-1 text-[12px] font-semibold text-[#974226] group-hover:gap-2 transition-all">
+                  <Link href={f.href} className="mt-auto flex items-center gap-1 text-[12px] font-semibold text-[#974226] group-hover:gap-2 transition-all">
                     <span>Open</span>
                     <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-                  </a>
+                  </Link>
                 )}
               </div>
             ))}
@@ -205,8 +233,8 @@ export default function SellerDashboard() {
             style={{ animationDelay: "0.18s" }}
           >
             <div className="inline-flex items-center gap-2 bg-[#f2dfd1]/40 border border-[#dbc1b9]/30 rounded-full px-5 py-2.5 text-[13px] text-[#88726c]">
-              <span className="material-symbols-outlined text-[16px]">construction</span>
-              Create product and create auction APIs are wrapped, but form UI is still pending.
+              <span className="material-symbols-outlined text-[16px]">inventory_2</span>
+              Product creation and listing management are connected to backend APIs.
             </div>
           </div>
 
@@ -215,6 +243,8 @@ export default function SellerDashboard() {
               ← Back to Profile
             </Link>
           </div>
+            </>
+          )}
         </main>
       </div>
     </>

@@ -18,7 +18,13 @@ export default function Navbar() {
   }, []);
 
   const isAdmin = user?.role === "ADMIN";
-  const sellHref = sellerState.isSeller || isAdmin ? "/seller/dashboard" : "/profile/become-seller";
+  const hasSellerApplication = ["pending", "rejected", "suspended"].includes(sellerState.verificationStatus);
+  const sellHref = sellerState.isSeller
+    ? "/seller/dashboard"
+    : hasSellerApplication
+    ? "/profile/become-seller/status"
+    : "/profile/become-seller";
+  const sellLabel = sellerState.isSeller ? "My Shop" : hasSellerApplication ? "Seller Status" : "Sell";
 
   return (
     <nav className={`navbar${scrolled ? " scrolled" : ""}`} id="navbar">
@@ -47,7 +53,7 @@ export default function Navbar() {
               }`}
               style={{ borderBottom: sellerState.isSeller ? "2px solid #6d7a4f" : "2px solid #974226", paddingBottom: "2px" }}
             >
-              {sellerState.isSeller ? "My Shop" : "Sell"}
+              {sellLabel}
             </Link>
           )}
         </div>
@@ -90,13 +96,13 @@ export default function Navbar() {
                         Seller Dashboard
                       </Link>
                     )}
-                    {sellerState.verificationStatus === "pending" && !sellerState.isSeller && (
+                    {hasSellerApplication && !sellerState.isSeller && (
                       <Link
                         href="/profile/become-seller/status"
                         className="flex items-center gap-2.5 px-4 py-3 text-sm text-[#974226] font-semibold hover:bg-[#fff8f5] border-t border-[#f2dfd1]"
                       >
                         <span className="material-symbols-outlined text-[18px]">hourglass_empty</span>
-                        Verification Status
+                    Seller Status
                       </Link>
                     )}
                   </>
@@ -145,7 +151,7 @@ export default function Navbar() {
             className="font-semibold text-[#974226]"
             onClick={() => setMobileOpen(false)}
           >
-            {sellerState.isSeller ? "My Shop" : "Sell"}
+            {sellLabel}
           </Link>
         )}
 

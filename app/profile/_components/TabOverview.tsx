@@ -38,7 +38,7 @@ export default function TabOverview() {
       title: `Bid Placed — ${bid.auction?.product?.title ?? "Auction item"}`,
       time: formatDate(bid.createdAt),
       status: bid.isWinning ? "Winning" : "Outbid",
-      imageUrl: bid.auction?.product?.images?.[0] || "/product1.png",
+      imageUrl: bid.auction?.product?.images?.[0],
     }));
 
     const orderItems = orders.map((order) => ({
@@ -46,7 +46,7 @@ export default function TabOverview() {
       title: `Order — ${order.product?.title ?? "Marketplace item"}`,
       time: formatDate(order.createdAt),
       status: order.status,
-      imageUrl: order.product?.images?.[0] || "/product2.png",
+      imageUrl: order.product?.images?.[0],
     }));
 
     return [...bidItems, ...orderItems].slice(0, 5);
@@ -93,12 +93,18 @@ export default function TabOverview() {
               }`}
             >
               <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-[#feeadc] relative">
-                <Image
-                  src={item.imageUrl}
-                  alt={item.title}
-                  fill
-                  className="object-cover"
-                />
+                {item.imageUrl ? (
+                  <Image
+                    src={item.imageUrl}
+                    alt={item.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="admin-image-placeholder h-full">
+                    <span className="material-symbols-outlined">image_not_supported</span>
+                  </div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-[14px] font-semibold text-[#231a11] truncate group-hover:text-[#974226] transition-colors">

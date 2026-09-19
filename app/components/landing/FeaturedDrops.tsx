@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { useCountdown } from "@/app/hooks/useAnimations";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { apiAssetUrl, productsApi, type Product } from "@/app/lib/api";
 
 /* ─── Wishlist Button ─── */
 function WishlistBtn({ id }: { id: string }) {
@@ -25,93 +26,62 @@ function WishlistBtn({ id }: { id: string }) {
 /* ─── Product Card ─── */
 interface ProductProps {
   id: string;
-  era: string;
-  hot?: boolean;
-  src: string;
-  alt: string;
-  tags: { label: string; cls: string }[];
-  name: string;
-  meta: string;
-  price: string;
-  original: string;
-  rating: string;
+  product: Product;
 }
 
-function ProductCard({ id, era, hot, src, alt, tags, name, meta, price, original, rating }: ProductProps) {
-  const [quickLabel, setQuickLabel] = useState("Quick View");
+function formatVnd(amount: number) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function conditionLabel(condition: Product["condition"]) {
+  return condition.replace(/_/g, " ");
+}
+
+function ProductCard({ id, product }: ProductProps) {
+  const image = apiAssetUrl(product.images?.[0]);
   return (
     <article className="product-card animate-in" id={id}>
       <div className="product-img-wrap">
-        <Image src={src} alt={alt} fill className="product-img" style={{ objectFit: "cover" }} sizes="(max-width:768px) 100vw, 25vw" />
+        <Link href={`/products/${product.id}`} className="product-image-link" aria-label={`Xem ${product.title}`}>
+          {image ? (
+            <Image src={image} alt={product.title} fill className="product-img" style={{ objectFit: "cover" }} sizes="(max-width:768px) 100vw, 25vw" />
+          ) : (
+            <div className="admin-image-placeholder h-full">
+              <span className="material-symbols-outlined">image_not_supported</span>
+              <span>Không có ảnh</span>
+            </div>
+          )}
+        </Link>
         <div className="product-overlay">
-          <button className="btn-quick-view" id={`quick-${id}`} onClick={() => { setQuickLabel("Opening…"); setTimeout(() => setQuickLabel("Quick View"), 1500); }}>
-            {quickLabel}
-          </button>
+          <Link className="btn-quick-view" id={`quick-${id}`} href={`/products/${product.id}`}>
+            Quick View
+          </Link>
         </div>
-        <div className="product-badge-era">{era}</div>
-        {hot && <span className="product-badge-hot">🔥 Hot</span>}
         <WishlistBtn id={`wish-${id}`} />
       </div>
       <div className="product-info">
         <div className="product-tags">
-          {tags.map((t) => <span key={t.label} className={`tag ${t.cls}`}>{t.label}</span>)}
+          <span className="tag tag-olive">{product.category}</span>
+          <span className="tag tag-mustard">{conditionLabel(product.condition)}</span>
         </div>
-        <h3 className="product-name">{name}</h3>
-        <p className="product-meta">{meta}</p>
+        <h3 className="product-name">
+          <Link href={`/products/${product.id}`}>{product.title}</Link>
+        </h3>
+        <p className="product-meta">
+          {[product.brand, product.size ? `Size ${product.size}` : null].filter(Boolean).join(" · ")}
+        </p>
         <div className="product-footer">
           <div>
-            <span className="product-price">{price}</span>
-            <span className="product-original">{original}</span>
+            <span className="product-price">{formatVnd(product.price)}</span>
           </div>
           <div className="seller-trust">
             <span className="material-symbols-outlined" style={{ fontSize: 14, color: "var(--primary)", fontVariationSettings: "'FILL' 1" }}>verified</span>
-            <span>{rating}</span>
+            <span>{product.seller?.reputation ?? 0}</span>
           </div>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-/* ─── Auction Card ─── */
-function AuctionCard() {
-  const timer = useCountdown(2 * 3600000 + 14 * 60000 + 37000);
-  const [bid, setBid] = useState(2100000);
-  const [label, setLabel] = useState("Place Bid");
-  const handleBid = () => {
-    setBid((v) => v + 50000);
-    setLabel("Bid placed! ✓");
-    setTimeout(() => setLabel("Place Bid"), 2000);
-  };
-  return (
-    <article className="product-card auction-card animate-in" id="product-auction">
-      <div className="product-img-wrap auction-img-wrap">
-        <div className="auction-placeholder">
-          <span className="material-symbols-outlined" style={{ fontSize: 48, color: "#88726c" }}>gavel</span>
-          <p style={{ color: "#55433d", fontFamily: "var(--font-manrope)", fontSize: 14, marginTop: 8 }}>Live Auction</p>
-        </div>
-        <div className="auction-live-badge"><span className="live-dot" />LIVE</div>
-      </div>
-      <div className="product-info">
-        <div className="product-tags">
-          <span className="tag tag-terracotta">Auction</span>
-          <span className="tag tag-olive">Rare Find</span>
-        </div>
-        <h3 className="product-name">Silk Scarf — Signed Piece</h3>
-        <p className="product-meta">One Size · Mint Condition</p>
-        <div className="auction-timer">
-          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>timer</span>
-          <span>{timer}</span> remaining
-        </div>
-        <div className="product-footer">
-          <div>
-            <span style={{ fontSize: 11, color: "#88726c", fontFamily: "var(--font-manrope)" }}>Current bid</span>
-            <br />
-            <span className="product-price">₫ {bid.toLocaleString("vi-VN")}</span>
-          </div>
-          <button className="btn-bid" onClick={handleBid} style={label !== "Place Bid" ? { background: "#556138" } : undefined}>
-            {label}
-          </button>
         </div>
       </div>
     </article>
@@ -120,6 +90,28 @@ function AuctionCard() {
 
 /* ─── Featured Drops Section ─── */
 export default function FeaturedDrops() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    productsApi
+      .list({ limit: 4, sortBy: "newest" })
+      .then((res) => {
+        if (!cancelled) setProducts(res.data);
+      })
+      .catch(() => {
+        if (!cancelled) setProducts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className="section section-alt" id="drops">
       <div className="container">
@@ -128,25 +120,25 @@ export default function FeaturedDrops() {
             <p className="section-eyebrow">Latest Drops</p>
             <h2 className="section-title" style={{ textAlign: "left", marginBottom: 0 }}>Featured Pieces</h2>
           </div>
-          <a href="#" className="btn-outline-sm">
+          <Link href="/shop" className="btn-outline-sm">
             View all drops <span className="material-symbols-outlined" style={{ fontSize: 14, verticalAlign: "middle" }}>arrow_forward</span>
-          </a>
+          </Link>
         </div>
-        <div className="products-grid">
-          <ProductCard id="product-blazer" era="90s" src="/product1.png" alt="Vintage beige linen blazer"
-            tags={[{ label: "Vintage", cls: "tag-olive" }, { label: "Designer", cls: "tag-mustard" }]}
-            name="Linen Oversized Blazer" meta="Size M · Excellent Condition"
-            price="₫ 420,000" original="₫ 680,000" rating="4.9" />
-          <ProductCard id="product-bag" era="80s" hot src="/product2.png" alt="Vintage brown leather crossbody bag"
-            tags={[{ label: "Rare", cls: "tag-olive" }, { label: "Leather", cls: "tag-terracotta" }]}
-            name="Structured Leather Satchel" meta="One Size · Good Condition"
-            price="₫ 680,000" original="₫ 1,200,000" rating="5.0" />
-          <ProductCard id="product-skirt" era="70s" src="/product3.png" alt="Vintage floral midi skirt"
-            tags={[{ label: "Vintage", cls: "tag-olive" }, { label: "Boho", cls: "tag-mustard" }]}
-            name="Floral Midi Skirt" meta="Size S · Like New"
-            price="₫ 295,000" original="₫ 450,000" rating="4.8" />
-          <AuctionCard />
-        </div>
+        {loading ? (
+          <div className="admin-skeleton-list"><div className="admin-skeleton-card" /></div>
+        ) : products.length === 0 ? (
+          <div className="admin-empty">
+            <span className="material-symbols-outlined admin-empty-icon">inventory_2</span>
+            <h3>Chưa có sản phẩm</h3>
+            <p>Featured drops sẽ xuất hiện khi backend có sản phẩm.</p>
+          </div>
+        ) : (
+          <div className="products-grid">
+            {products.map((product) => (
+              <ProductCard key={product.id} id={`product-${product.id}`} product={product} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

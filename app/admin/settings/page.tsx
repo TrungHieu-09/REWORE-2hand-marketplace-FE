@@ -2,11 +2,10 @@
 
 import { AdminShell } from "../../components/admin/AdminShell";
 import { EmptyState } from "../../components/admin/AdminStates";
-import { mockApplications, mockReports } from "../_data";
+import { useAdminBadges } from "../../components/admin/useAdminBadges";
 
 export default function AdminSettingsPage() {
-  const pendingSellers = mockApplications.filter((item) => item.status === "PENDING" || item.status === "PENDING_VERIFICATION").length;
-  const openReports = mockReports.filter((item) => item.status === "OPEN").length;
+  const { pendingSellers, openReports } = useAdminBadges();
 
   return (
     <AdminShell pendingSellers={pendingSellers} openReports={openReports}>
