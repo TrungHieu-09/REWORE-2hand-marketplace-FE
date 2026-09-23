@@ -664,7 +664,20 @@ export const bidsApi = {
     }),
 };
 
+export type CreateOrderPayload = {
+  productId: string;
+  shippingAddress: string;
+  shippingFee?: number;
+  note?: string;
+};
+
 export const ordersApi = {
+  create: (payload: CreateOrderPayload) =>
+    apiRequest<ApiItemResponse<Order>>("/api/orders", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(payload),
+    }),
   list: (query?: OrderListQuery) =>
     apiRequest<ApiListResponse<Order>>(`/api/orders${toQueryString(query)}`, {
       auth: true,
@@ -678,6 +691,7 @@ export const ordersApi = {
       body: JSON.stringify({ status }),
     }),
 };
+
 
 export const wishlistApi = {
   list: (query?: PageQuery) =>

@@ -97,15 +97,23 @@ export default function SellerDashboard() {
         ? "Loaded from /api/auctions and filtered by seller id."
         : `Unlock at seller score ${LIVE_THRESHOLD}. You need ${LIVE_THRESHOLD - sellerScore} more points.`,
       available: canLiveAuction,
-      href: "#",
+      href: "/seller/auctions",
       stat: `${auctions.filter((auction) => auction.status === "LIVE").length} live`,
     },
     {
-      icon: "payments",
-      title: "Earnings",
-      description: "Loaded from seller orders that are paid, shipped, or delivered.",
+      icon: "shopping_bag",
+      title: "Orders",
+      description: "Xem và xử lý đơn hàng từ buyer của bạn.",
       available: true,
-      href: "#",
+      href: "/seller/orders",
+      stat: `${orders.length} đơn`,
+    },
+    {
+      icon: "query_stats",
+      title: "Analytics",
+      description: "Thống kê doanh thu, lượt xem và hiệu suất cửa hàng.",
+      available: true,
+      href: "/seller/analytics",
       stat: `₫${new Intl.NumberFormat("vi-VN").format(paidRevenue)}`,
     },
   ];
