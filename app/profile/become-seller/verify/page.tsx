@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "../../../components/Navbar";
-import { useSeller } from "../../../context/SellerContext";
+import { useAuth } from "../../../context/AuthContext";
+import { ApiError, sellerApi } from "../../../lib/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -13,9 +14,12 @@ type Step = 1 | 2 | 3;
 type PayoutType = "bank" | "ewallet";
 
 interface Step1Data {
+  shopName: string;
   fullName: string;
   dob: string;
   idNumber: string;
+  phone: string;
+  pickupAddress: string;
   files: { front: File | null; back: File | null; selfie: File | null };
 }
 
@@ -30,6 +34,16 @@ const BANKS = [
   "Vietcombank", "Techcombank", "MB Bank", "VPBank",
   "BIDV", "VietinBank", "TPBank", "Agribank", "ACB", "SHB",
 ];
+
+const MAX_SELLER_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_SELLER_IMAGE_TYPES = new Set(["image/jpeg", "image/png"]);
+
+const validateSellerImage = (file: File | null, label: string) => {
+  if (!file) return `${label} is required`;
+  if (!ALLOWED_SELLER_IMAGE_TYPES.has(file.type)) return `${label} must be JPG or PNG`;
+  if (file.size > MAX_SELLER_IMAGE_SIZE_BYTES) return `${label} must be 5MB or smaller`;
+  return "";
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Progress Bar (UI 10 / 11 style — left-aligned label above 3 segments)
@@ -67,6 +81,13 @@ function UploadZone({
   onChange: (f: File | null) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : ""), [file]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -92,7 +113,7 @@ function UploadZone({
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,application/pdf"
+        accept="image/jpeg,image/png"
         className="hidden"
         onChange={(e) => onChange(e.target.files?.[0] ?? null)}
       />
@@ -106,10 +127,18 @@ function UploadZone({
             file ? "text-white" : error ? "text-[#ba1a1a]" : "text-[#974226]"
           }`}
           style={{ fontVariationSettings: file ? "'FILL' 1" : "'FILL' 0" }}
-        >
-          {file ? "check_circle" : icon}
-        </span>
+      >
+        {file ? "check_circle" : icon}
+      </span>
       </div>
+      {previewUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={previewUrl}
+          alt={`${label} preview`}
+          className="seller-upload-preview"
+        />
+      )}
       <div className="text-center">
         <span className="block text-[14px] font-semibold text-[#231a11]">
           {file ? file.name : label}
@@ -172,6 +201,16 @@ function Step1Form({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <Field label="Shop name" error={errors.shopName} className="md:col-span-2">
+          <input
+            type="text"
+            placeholder="Your public shop name"
+            value={data.shopName}
+            onChange={(e) => onChange({ ...data, shopName: e.target.value })}
+            className={inputCls(errors.shopName)}
+          />
+        </Field>
+
         <Field label="Full legal name" error={errors.fullName} className="md:col-span-2">
           <input
             type="text"
@@ -200,6 +239,26 @@ function Step1Form({
             className={inputCls(errors.idNumber)}
           />
         </Field>
+
+        <Field label="Phone" error={errors.phone}>
+          <input
+            type="tel"
+            placeholder="0901234567"
+            value={data.phone}
+            onChange={(e) => onChange({ ...data, phone: e.target.value })}
+            className={inputCls(errors.phone)}
+          />
+        </Field>
+
+        <Field label="Pickup address" error={errors.pickupAddress}>
+          <input
+            type="text"
+            placeholder="Quan 1, TP.HCM"
+            value={data.pickupAddress}
+            onChange={(e) => onChange({ ...data, pickupAddress: e.target.value })}
+            className={inputCls(errors.pickupAddress)}
+          />
+        </Field>
       </div>
 
       <hr className="border-t border-dashed border-[#dbc1b9]/60" />
@@ -207,7 +266,7 @@ function Step1Form({
       <div>
         <div className="flex items-end justify-between mb-4">
           <h2 className="text-[17px] font-semibold text-[#231a11]">Identity Documents</h2>
-          <span className="text-[12px] text-[#88726c]">Accepted: JPG, PNG, PDF. Max 5MB.</span>
+          <span className="text-[12px] text-[#88726c]">Accepted: JPG, PNG. Max 5MB.</span>
         </div>
         {errors.files && (
           <div className="flex items-center gap-1.5 text-[13px] text-[#ba1a1a] mb-3 bg-[#ffdad6]/30 border border-[#ba1a1a]/20 rounded-lg px-4 py-2.5">
@@ -220,8 +279,8 @@ function Step1Form({
             onChange={(f) => onChange({ ...data, files: { ...data.files, front: f } })} />
           <UploadZone icon="upload_file" label="ID back photo" file={data.files.back} error={!!errors.files && !data.files.back}
             onChange={(f) => onChange({ ...data, files: { ...data.files, back: f } })} />
-          <UploadZone icon="photo_camera" label="Selfie holding your ID" hint="Ensure your face and ID text are clearly visible"
-            file={data.files.selfie} wide error={!!errors.files && !data.files.selfie}
+          <UploadZone icon="photo_camera" label="Selfie holding your ID" hint="Optional, but helps admin verify faster"
+            file={data.files.selfie} wide
             onChange={(f) => onChange({ ...data, files: { ...data.files, selfie: f } })} />
         </div>
       </div>
@@ -342,8 +401,10 @@ function Step3Review({
     v.length > keep ? "●●●● " + v.slice(-keep) : v || "—";
 
   const rows = [
+    { label: "Shop Name", value: step1.shopName || "—", step: 1 as Step },
     { label: "Full Name", value: step1.fullName || "—", step: 1 as Step },
     { label: "ID Number", value: mask(step1.idNumber), step: 1 as Step },
+    { label: "Pickup Address", value: step1.pickupAddress || "—", step: 1 as Step },
     {
       label: "Bank Account",
       value: step2.payoutType === "bank"
@@ -436,12 +497,14 @@ function Step3Review({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function VerifyPage() {
   const router = useRouter();
-  const { submitVerification } = useSeller();
+  const { refreshMe } = useAuth();
   const [step, setStep] = useState<Step>(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // Form data
   const [step1, setStep1] = useState<Step1Data>({
-    fullName: "", dob: "", idNumber: "",
+    shopName: "", fullName: "", dob: "", idNumber: "", phone: "", pickupAddress: "",
     files: { front: null, back: null, selfie: null },
   });
   const [step2, setStep2] = useState<Step2Data>({
@@ -456,11 +519,21 @@ export default function VerifyPage() {
 
   const validateStep1 = useCallback(() => {
     const errs: Partial<Record<string, string>> = {};
+    if (!step1.shopName.trim()) errs.shopName = "Shop name is required";
     if (!step1.fullName.trim()) errs.fullName = "Full legal name is required";
     if (!step1.dob) errs.dob = "Date of birth is required";
     if (!step1.idNumber.trim()) errs.idNumber = "ID number is required";
-    const uploaded = Object.values(step1.files).filter(Boolean).length;
-    if (uploaded < 3) errs.files = `Please upload all 3 documents (${uploaded}/3 uploaded)`;
+    if (!step1.phone.trim()) errs.phone = "Phone is required";
+    if (!step1.pickupAddress.trim()) errs.pickupAddress = "Pickup address is required";
+    const uploaded = [step1.files.front, step1.files.back].filter(Boolean).length;
+    const frontError = validateSellerImage(step1.files.front, "ID front photo");
+    const backError = validateSellerImage(step1.files.back, "ID back photo");
+    const selfieError = step1.files.selfie ? validateSellerImage(step1.files.selfie, "Selfie photo") : "";
+    if (frontError || backError || selfieError) {
+      errs.files = [frontError, backError, selfieError].filter(Boolean).join(". ");
+    } else if (uploaded < 2) {
+      errs.files = `Please upload ID front and back (${uploaded}/2 uploaded)`;
+    }
     setS1Errors(errs);
     return Object.keys(errs).length === 0;
   }, [step1]);
@@ -488,25 +561,42 @@ export default function VerifyPage() {
     else setStep((s) => (s - 1) as Step);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    setSubmitError("");
     if (step === 1) {
       if (validateStep1()) setStep(2);
     } else if (step === 2) {
       if (validateStep2()) setStep(3);
     } else {
       if (validateStep3()) {
-        // Submit to SellerContext
-        submitVerification({
-          fullName: step1.fullName,
-          dob: step1.dob,
-          idNumber: step1.idNumber,
-          filesCount: Object.values(step1.files).filter(Boolean).length,
-          payoutType: step2.payoutType,
-          bank: step2.bank,
-          accountNumber: step2.accountNumber,
-          accountHolder: step2.accountHolder,
-        });
-        router.push("/profile/become-seller/status");
+        if (!step1.files.front || !step1.files.back) {
+          setStep(1);
+          setS1Errors({ files: "Please upload ID front and back" });
+          return;
+        }
+
+        setSubmitting(true);
+        try {
+          await sellerApi.submitApplication({
+            shopName: step1.shopName.trim(),
+            legalName: step1.fullName.trim(),
+            idCardFrontImage: step1.files.front,
+            idCardBackImage: step1.files.back,
+            selfieImage: step1.files.selfie,
+            phone: step1.phone.trim(),
+            pickupAddress: step1.pickupAddress.trim(),
+            bankName: step2.bank.trim() || undefined,
+            bankAccountNumber: step2.accountNumber.trim(),
+            bankAccountHolder: step2.accountHolder.trim(),
+            acceptedSellerTerms: true,
+          });
+          await refreshMe();
+          router.push("/profile/become-seller/status");
+        } catch (err) {
+          setSubmitError(err instanceof ApiError ? err.message : "Unable to submit seller application.");
+        } finally {
+          setSubmitting(false);
+        }
       }
     }
   };
@@ -557,6 +647,12 @@ export default function VerifyPage() {
                   errors={s3Errors}
                 />
               )}
+              {submitError && (
+                <div className="mt-5 flex items-center gap-1.5 text-[13px] text-[#ba1a1a] bg-[#ffdad6]/30 border border-[#ba1a1a]/20 rounded-lg px-4 py-2.5">
+                  <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+                  {submitError}
+                </div>
+              )}
             </div>
 
             {/* Footer nav */}
@@ -570,9 +666,10 @@ export default function VerifyPage() {
               </button>
               <button
                 onClick={handleContinue}
+                disabled={submitting}
                 className="px-8 py-3 rounded-lg bg-[#974226] text-white text-[13px] font-semibold tracking-wide hover:bg-[#b65a3c] active:scale-[0.97] transition-all shadow-sm"
               >
-                {step === 3 ? "Submit for Review" : "Continue"}
+                {submitting ? "Submitting..." : step === 3 ? "Submit for Admin Review" : "Continue"}
               </button>
             </div>
           </div>

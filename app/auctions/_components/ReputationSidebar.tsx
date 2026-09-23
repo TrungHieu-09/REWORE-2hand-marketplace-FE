@@ -1,24 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import type { ActiveBid } from "../_data/mock-auctions";
-import { ACTIVE_BIDS } from "../_data/mock-auctions";
-
-const TRUST_SCORE = 86;
-
-function formatVND(amount: number) {
-  return "₫" + new Intl.NumberFormat("vi-VN").format(amount);
-}
+import { useEffect, useState } from "react";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function ReputationSidebar() {
+  const { user } = useAuth();
   const [barWidth, setBarWidth] = useState(0);
+  const trustScore = user?.reputation ?? 0;
 
-  // Animate the trust score bar on mount
   useEffect(() => {
-    const t = setTimeout(() => setBarWidth(TRUST_SCORE), 300);
+    const t = setTimeout(() => setBarWidth(trustScore), 300);
     return () => clearTimeout(t);
-  }, []);
+  }, [trustScore]);
 
   return (
     <aside className="w-full md:w-80 flex-shrink-0 flex flex-col gap-5 md:sticky md:top-24 md:self-start">
@@ -48,7 +41,7 @@ export default function ReputationSidebar() {
               Trust Score
             </span>
             <span className="font-[family-name:var(--font-playfair)] text-2xl font-bold text-[#974226]">
-              {TRUST_SCORE}
+              {trustScore}
             </span>
           </div>
 
@@ -81,9 +74,9 @@ export default function ReputationSidebar() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {ACTIVE_BIDS.map((bid, i) => (
-            <BidItem key={bid.id} bid={bid} showDivider={i < ACTIVE_BIDS.length - 1} />
-          ))}
+          <div className="rounded-xl bg-[#fff8f5] border border-[#f2dfd1] p-4 text-center text-xs font-medium text-[#88726c]">
+            Chưa có bid đang hoạt động.
+          </div>
         </div>
 
         <button
@@ -97,58 +90,5 @@ export default function ReputationSidebar() {
         </button>
       </div>
     </aside>
-  );
-}
-
-function BidItem({
-  bid,
-  showDivider,
-}: {
-  bid: ActiveBid;
-  showDivider: boolean;
-}) {
-  const isWinning = bid.status === "winning";
-  return (
-    <>
-      <div className="flex gap-3 group cursor-pointer">
-        <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#feeadc]">
-          <Image
-            src={bid.imageUrl}
-            alt={bid.title}
-            fill
-            className="object-cover"
-            sizes="56px"
-          />
-        </div>
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <h4
-            className={`text-xs font-semibold text-[#231a11] line-clamp-1 group-hover:text-[#974226] transition-colors ${!isWinning ? "opacity-70" : ""}`}
-          >
-            {bid.title}
-          </h4>
-          <p
-            className={`text-[11px] text-[#55443d] mt-0.5 ${!isWinning ? "line-through opacity-60" : ""}`}
-          >
-            Your bid: {formatVND(bid.yourBid)}
-          </p>
-          {isWinning ? (
-            <p className="flex items-center gap-1 text-[11px] font-semibold text-[#556138] mt-1">
-              <span className="material-symbols-outlined text-[12px]">
-                trending_up
-              </span>
-              Winning
-            </p>
-          ) : (
-            <p className="flex items-center gap-1 text-[11px] font-semibold text-[#ba1a1a] mt-1">
-              <span className="material-symbols-outlined text-[12px]">
-                warning
-              </span>
-              Outbid
-            </p>
-          )}
-        </div>
-      </div>
-      {showDivider && <div className="h-px bg-[#f2dfd1]" />}
-    </>
   );
 }

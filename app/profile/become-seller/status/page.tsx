@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Navbar from "../../../components/Navbar";
-import { useSeller } from "../../../context/SellerContext";
+import { useAuth } from "../../../context/AuthContext";
+import { sellerApi, type SellerApplication, type SellerApplicationStatus, type SellerStatus } from "../../../lib/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Seller Score Ring (like BuyerScore in ProfileRightSidebar)
@@ -38,20 +39,7 @@ function SellerScoreRing({ score }: { score: number }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Pending State (UI 12)
 // ─────────────────────────────────────────────────────────────────────────────
-function PendingState({ onSimulateApproval, onSimulateRejection }: {
-  onSimulateApproval: () => void;
-  onSimulateRejection: () => void;
-}) {
-  const [simulating, setSimulating] = useState(false);
-
-  const handleApprove = () => {
-    setSimulating(true);
-    setTimeout(() => {
-      onSimulateApproval();
-      setSimulating(false);
-    }, 800);
-  };
-
+function PendingState() {
   return (
     <div className="flex flex-col items-center text-center py-4">
       {/* Hourglass icon */}
@@ -68,7 +56,7 @@ function PendingState({ onSimulateApproval, onSimulateRejection }: {
         Your application is under review
       </h1>
       <p className="text-[15px] text-[#55433d] leading-relaxed max-w-[340px] mb-8">
-        This usually takes less than 24 hours. We&apos;ll notify you once approved.
+        Admin will review your ID and payout details. You can keep using REWORE as a buyer while waiting.
       </p>
 
       {/* Disabled dashboard button */}
@@ -81,37 +69,11 @@ function PendingState({ onSimulateApproval, onSimulateRejection }: {
       </button>
 
       <Link
-        href="/"
+        href="/shop"
         className="text-[13px] text-[#88726c] underline underline-offset-4 hover:text-[#974226] transition-colors mb-10"
       >
-        Return to Homepage
+        Return to Shop
       </Link>
-
-      {/* Demo controls */}
-      <div className="w-full border-t border-dashed border-[#dbc1b9]/60 pt-6 mt-2">
-        <p className="text-[11px] text-[#88726c] uppercase tracking-widest mb-4 font-semibold">
-          ✦ Demo Controls
-        </p>
-        <div className="flex gap-3 justify-center flex-wrap">
-          <button
-            onClick={handleApprove}
-            disabled={simulating}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#dae9b5] text-[#3f4b25] text-[13px] font-semibold hover:bg-[#becc9b] transition-colors disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-              {simulating ? "sync" : "check_circle"}
-            </span>
-            {simulating ? "Processing…" : "Simulate Approval"}
-          </button>
-          <button
-            onClick={onSimulateRejection}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#ffdad6] text-[#93000a] text-[13px] font-semibold hover:bg-[#ffb4ab] transition-colors"
-          >
-            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
-            Simulate Rejection
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -242,23 +204,58 @@ function RejectedState({ reason, onResubmit }: { reason: string; onResubmit: () 
   );
 }
 
+function statusToView(status?: SellerStatus | SellerApplicationStatus): "none" | "pending" | "approved" | "rejected" | "suspended" {
+  if (status === "APPROVED") return "approved";
+  if (status === "PENDING" || status === "PENDING_VERIFICATION") return "pending";
+  if (status === "REJECTED") return "rejected";
+  if (status === "SUSPENDED") return "suspended";
+  return "none";
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Status Page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function StatusPage() {
   const router = useRouter();
-  const { sellerState, simulateApproval, simulateRejection, resetSeller } = useSeller();
-  const { verificationStatus, sellerScore, rejectionReason } = sellerState;
+  const { user, refreshMe } = useAuth();
+  const refreshMeRef = useRef(refreshMe);
+  const [application, setApplication] = useState<SellerApplication | null>(null);
+  const [loading, setLoading] = useState(true);
+  const verificationStatus = statusToView(application?.status ?? user?.sellerStatus);
+  const sellerScore = user?.reputation ?? 0;
+  const rejectionReason = application?.rejectedReason ?? application?.rejectionReason ?? user?.sellerSuspendedReason;
 
-  // If no verification was submitted, redirect back
   useEffect(() => {
-    if (verificationStatus === "none") {
-      router.replace("/profile/become-seller");
-    }
-  }, [verificationStatus, router]);
+    refreshMeRef.current = refreshMe;
+  }, [refreshMe]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    sellerApi
+      .currentApplication()
+      .then(async (res) => {
+        if (cancelled) return;
+        setApplication(res.application);
+        if (res.application.status === "APPROVED") {
+          await refreshMeRef.current();
+        }
+      })
+      .catch(() => {
+        if (!cancelled && (!user?.sellerStatus || user.sellerStatus === "NONE")) {
+          router.replace("/profile/become-seller");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, user?.sellerStatus]);
 
   const handleResubmit = () => {
-    resetSeller();
     router.push("/profile/become-seller/verify");
   };
 
@@ -266,6 +263,7 @@ export default function StatusPage() {
     pending: "Under Review",
     approved: "Approved",
     rejected: "Rejected",
+    suspended: "Suspended",
   };
 
   return (
@@ -292,20 +290,28 @@ export default function StatusPage() {
             <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-[#f2dfd1]/20 pointer-events-none" />
 
             <div className="relative z-10">
-              {verificationStatus === "pending" && (
-                <PendingState
-                  onSimulateApproval={simulateApproval}
-                  onSimulateRejection={() =>
-                    simulateRejection("Your ID photo was unclear or information did not match our records.")
-                  }
-                />
+              {loading && (
+                <div className="flex flex-col items-center text-center py-8">
+                  <div className="w-20 h-20 rounded-full bg-[#f2dfd1] animate-pulse mb-6" />
+                  <div className="h-7 w-64 rounded-full bg-[#f2dfd1] animate-pulse mb-4" />
+                  <div className="h-4 w-80 max-w-full rounded-full bg-[#f2dfd1] animate-pulse" />
+                </div>
               )}
-              {verificationStatus === "approved" && (
+              {!loading && verificationStatus === "pending" && (
+                <PendingState />
+              )}
+              {!loading && verificationStatus === "approved" && (
                 <ApprovedState score={sellerScore} />
               )}
-              {verificationStatus === "rejected" && (
+              {!loading && verificationStatus === "rejected" && (
                 <RejectedState
                   reason={rejectionReason ?? "Verification failed. Please try again."}
+                  onResubmit={handleResubmit}
+                />
+              )}
+              {!loading && verificationStatus === "suspended" && (
+                <RejectedState
+                  reason={rejectionReason ?? "Seller access is suspended. Please contact REWORE support."}
                   onResubmit={handleResubmit}
                 />
               )}

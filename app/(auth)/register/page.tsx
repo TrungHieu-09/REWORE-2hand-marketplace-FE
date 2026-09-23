@@ -1,8 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ApiError } from "@/app/lib/api";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -15,21 +18,26 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { register } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) { setError("Please enter your full name."); return; }
     if (!email) { setError("Please enter your email address."); return; }
-    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     if (password !== confirmPassword) { setError("Passwords do not match."); return; }
     if (!agree) { setError("Please agree to the Terms of Service and Privacy Policy."); return; }
     setError("");
     setLoading(true);
-    setTimeout(() => {
-      localStorage.setItem("rewore_authed", "true");
+    try {
+      const res = await register({ email, password, name: fullName.trim() });
+      const otpEmail = res.email ?? email.trim();
+      router.push(`/verify-otp?email=${encodeURIComponent(otpEmail)}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Unable to create account. Please try again.");
+    } finally {
       setLoading(false);
-      router.push("/shop");
-    }, 1400);
+    }
   };
 
   const passwordStrength = (() => {
@@ -54,7 +62,7 @@ export default function RegisterPage() {
           <div className="auth-hero-gradient" />
         </div>
         <div className="auth-hero-top">
-          <a href="/" className="auth-brand-serif">EARTHEN ELEGANCE</a>
+          <Link href="/" className="auth-brand-serif">EARTHEN ELEGANCE</Link>
           <p className="auth-brand-sub">A Secondhand Dream</p>
         </div>
         <div className="auth-hero-bottom">
@@ -65,7 +73,7 @@ export default function RegisterPage() {
             </p>
           </div>
           <div className="auth-hero-footer">
-            <a href="/" className="auth-brand-primary">REWORE.</a>
+            <Link href="/" className="auth-brand-primary">REWORE.</Link>
             <div className="auth-trust-seal">
               <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#974226", fontVariationSettings: "'FILL' 1" }}>verified</span>
               <span>Trust Verified Platform</span>
@@ -77,11 +85,11 @@ export default function RegisterPage() {
       <div className="auth-panel">
         <div className="auth-card">
           <div className="auth-mobile-logo">
-            <a href="/" className="brand">REWORE</a>
+            <Link href="/" className="brand">REWORE</Link>
           </div>
           <div className="auth-card-header">
             <h1 className="auth-card-title">Create your account</h1>
-            <p className="auth-card-sub">Free forever. No credit card required.</p>
+            <p className="auth-card-sub">We&apos;ll email you a verification code.</p>
           </div>
           <form className="auth-form" onSubmit={handleSubmit} id="registerForm" noValidate>
             <div className="auth-field">
@@ -122,7 +130,7 @@ export default function RegisterPage() {
                   id="reg-password"
                   type={showPassword ? "text" : "password"}
                   className="auth-input auth-input-padded"
-                  placeholder="Min. 8 characters"
+                  placeholder="Min. 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
@@ -191,7 +199,7 @@ export default function RegisterPage() {
             )}
             <button type="submit" className="auth-btn-primary" id="create-account-btn" disabled={loading}>
               {loading ? (
-                <><span className="auth-spinner" />Creating account…</>
+                <><span className="auth-spinner" />Sending OTP...</>
               ) : (
                 <>
                   <span className="material-symbols-outlined" style={{ fontSize: 18 }}>person_add</span>
@@ -202,10 +210,13 @@ export default function RegisterPage() {
           </form>
           <p className="auth-signup-link">
             Already have an account?{" "}
-            <a href="/login" className="auth-link">Sign in</a>
+            <Link href="/login" className="auth-link">Sign in</Link>
           </p>
         </div>
       </div>
     </div>
   );
 }
+
+
+

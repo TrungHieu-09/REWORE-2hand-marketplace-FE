@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../../context/AuthContext";
-
+import { ApiError, setPendingOtpEmail } from "@/app/lib/api";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,26 +24,17 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setError(data.message || "Email hoặc mật khẩu không đúng.");
-        setLoading(false);
+      const signedInUser = await login(email, password);
+      router.push(signedInUser.role === "ADMIN" ? "/admin" : "/shop");
+    } catch (err) {
+      if (err instanceof ApiError && err.requiresOtp) {
+        const otpEmail = err.email ?? email.trim();
+        setPendingOtpEmail(otpEmail);
+        router.push(`/verify-otp?email=${encodeURIComponent(otpEmail)}`);
         return;
       }
-      login(data.token, data.user);
-      // Redirect based on role
-      if (data.user.role === "SELLER" || data.user.role === "ADMIN") {
-        router.push("/seller/dashboard");
-      } else {
-        router.push("/shop");
-      }
-    } catch {
-      setError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
+      setError(err instanceof ApiError ? err.message : "Unable to sign in. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
@@ -66,7 +58,7 @@ export default function LoginPage() {
 
         {/* Top branding */}
         <div className="auth-hero-top">
-          <a href="/" className="auth-brand-serif">EARTHEN ELEGANCE</a>
+          <Link href="/" className="auth-brand-serif">EARTHEN ELEGANCE</Link>
           <p className="auth-brand-sub">A Secondhand Dream</p>
         </div>
 
@@ -79,7 +71,7 @@ export default function LoginPage() {
             </p>
           </div>
           <div className="auth-hero-footer">
-            <a href="/" className="auth-brand-primary">REWORE.</a>
+            <Link href="/" className="auth-brand-primary">REWORE.</Link>
             <div className="auth-trust-seal">
               <span className="material-symbols-outlined" style={{ fontSize: 20, color: "#974226", fontVariationSettings: "'FILL' 1" }}>verified</span>
               <span>Trust Verified Platform</span>
@@ -93,7 +85,7 @@ export default function LoginPage() {
         <div className="auth-card">
           {/* Mobile logo */}
           <div className="auth-mobile-logo">
-            <a href="/" className="brand">REWORE</a>
+            <Link href="/" className="brand">REWORE</Link>
           </div>
 
           {/* Header */}
@@ -176,10 +168,13 @@ export default function LoginPage() {
           {/* Sign up link */}
           <p className="auth-signup-link">
             Don&apos;t have an account?{" "}
-            <a href="/register" className="auth-link">Create one free</a>
+            <Link href="/register" className="auth-link">Create one free</Link>
           </p>
         </div>
       </div>
     </div>
   );
 }
+
+
+

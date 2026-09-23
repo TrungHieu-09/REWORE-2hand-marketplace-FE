@@ -1,109 +1,254 @@
-import Link from "next/link";
-import SellerStatCards from "../../components/seller/SellerStatCards";
-import RecentOrdersTable from "../../components/seller/RecentOrdersTable";
-import SellerScoreCard from "../../components/seller/SellerScoreCard";
-import UrgentAttentionCard from "../../components/seller/UrgentAttentionCard";
+"use client";
 
-export default function SellerDashboardPage() {
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Navbar from "../../components/Navbar";
+import { useAuth } from "../../context/AuthContext";
+import {
+  ApiError,
+  auctionsApi,
+  ordersApi,
+  productsApi,
+  type Auction,
+  type Order,
+  type Product,
+} from "@/app/lib/api";
+
+export default function SellerDashboard() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [auctions, setAuctions] = useState<Auction[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const sellerStatus = user?.sellerStatus ?? (user?.role === "SELLER" ? "APPROVED" : "NONE");
+  const sellerScore = user?.reputation ?? 0;
+  const LIVE_THRESHOLD = 75;
+  const canLiveAuction = sellerScore >= LIVE_THRESHOLD;
+  const isSeller = user?.role === "SELLER" && sellerStatus === "APPROVED";
+
+  useEffect(() => {
+    if (user?.role === "ADMIN") router.replace("/admin");
+  }, [router, user?.role]);
+
+  useEffect(() => {
+    if (!user?.id || !isSeller) {
+      return;
+    }
+    let cancelled = false;
+
+    Promise.allSettled([
+      productsApi.list({ sellerId: user.id, limit: 50 }),
+      auctionsApi.list({ limit: 50 }),
+      ordersApi.list({ role: "seller", limit: 50 }),
+    ]).then(([productResult, auctionResult, orderResult]) => {
+      if (cancelled) return;
+
+      if (productResult.status === "fulfilled") setProducts(productResult.value.data);
+      if (auctionResult.status === "fulfilled") {
+        setAuctions(auctionResult.value.data.filter((auction) => auction.sellerId === user.id));
+      }
+      if (orderResult.status === "fulfilled") setOrders(orderResult.value.data);
+
+      const firstError = [productResult, auctionResult, orderResult].find(
+        (result) => result.status === "rejected"
+      );
+      if (firstError?.status === "rejected") {
+        const err = firstError.reason;
+        setMessage(err instanceof ApiError ? err.message : "Some seller data could not be loaded.");
+      }
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSeller, user?.id]);
+
+  const paidRevenue = orders
+    .filter((order) => ["PAID", "SHIPPED", "DELIVERED"].includes(order.status))
+    .reduce((sum, order) => sum + order.totalPrice + order.shippingFee, 0);
+
+  const features = [
+    {
+      icon: "add_circle",
+      title: "List an Item",
+      description: "Create a product with multipart image upload.",
+      available: isSeller,
+      href: "/seller/products/new",
+      stat: `${products.length} listings`,
+    },
+    {
+      icon: "inventory_2",
+      title: "My Listings",
+      description: "Loaded from /api/products filtered by your seller id.",
+      available: true,
+      href: "/seller/listings",
+      stat: `${products.filter((product) => product.status === "ACTIVE").length} active`,
+    },
+    {
+      icon: "gavel",
+      title: "Live Auctions",
+      description: canLiveAuction
+        ? "Loaded from /api/auctions and filtered by seller id."
+        : `Unlock at seller score ${LIVE_THRESHOLD}. You need ${LIVE_THRESHOLD - sellerScore} more points.`,
+      available: canLiveAuction,
+      href: "#",
+      stat: `${auctions.filter((auction) => auction.status === "LIVE").length} live`,
+    },
+    {
+      icon: "payments",
+      title: "Earnings",
+      description: "Loaded from seller orders that are paid, shipped, or delivered.",
+      available: true,
+      href: "#",
+      stat: `₫${new Intl.NumberFormat("vi-VN").format(paidRevenue)}`,
+    },
+  ];
 
   return (
     <>
-      {/* Welcome Banner */}
-      <section className="flex flex-col md:flex-row md:items-center justify-between pb-8 gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-bold text-[#974226] uppercase tracking-widest">Store Overview</span>
-            <span className="text-[#dbc1b9]">•</span>
-            <span className="text-[12px] text-[#655d52]">{today}</span>
-          </div>
-          <h1
-            className="text-[32px] font-semibold text-[#231a11] leading-tight"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            Welcome back, Old Soul Studio
-          </h1>
-          <p className="text-[15px] text-[#55433d] mt-0.5">
-            All systems running smoothly · 4 customer inquiries await response
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link
-            href="/seller/auctions/new"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#974226] text-[#974226] hover:bg-[#feeadc] text-[13px] font-bold transition-all"
-          >
-            <span className="material-symbols-outlined text-[18px]">gavel</span>
-            + Start Auction
-          </Link>
-          <Link
-            href="/seller/inventory/new"
-            className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#974226] hover:bg-[#b65a3c] text-white text-[13px] font-bold shadow-sm transition-all"
-          >
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-            + New Listing
-          </Link>
-        </div>
-      </section>
-
-      {/* Stat Cards */}
-      <SellerStatCards />
-
-      {/* Main 2-column grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left: Orders Table (8 cols) */}
-        <div className="lg:col-span-8">
-          <RecentOrdersTable />
-        </div>
-
-        {/* Right: Score + Alerts (4 cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          <SellerScoreCard />
-          <UrgentAttentionCard />
-        </div>
-      </div>
-
-      {/* Curator Advisory Banner */}
-      <section className="mt-8 rounded-2xl bg-[#ede1d2]/40 border border-[#dbc1b9]/30 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-[#974226]/10 text-[#974226] flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[24px]">workspace_premium</span>
-          </div>
-          <div>
-            <h4
-              className="text-[18px] font-semibold text-[#231a11]"
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
-              Curator Advisory: Autumn Outerwear Drop Scheduled
-            </h4>
-            <p className="text-[14px] text-[#55433d] mt-0.5">
-              Pre-registered buyers have increased by +34% this week. Ensure all garments are inspected, measurements documented, and authenticity certificates uploaded prior to Friday 18:00.
+      <Navbar />
+      <div className="min-h-screen bg-[#fff8f5] pt-24 pb-20">
+        <main className="max-w-[1280px] mx-auto px-5 md:px-12">
+          {!isSeller ? (
+            <div className="bg-white rounded-[24px] shadow-[0_12px_48px_-8px_rgba(43,33,24,0.09)] border border-[#dbc1b9]/30 p-8 md:p-12 text-center max-w-[620px] mx-auto">
+              <div className="w-16 h-16 rounded-full bg-[#f2dfd1] flex items-center justify-center mx-auto mb-5">
+                <span className="material-symbols-outlined text-[30px] text-[#974226]">hourglass_empty</span>
+              </div>
+              <h1 className="font-[family-name:var(--font-playfair)] text-[32px] font-semibold text-[#231a11] mb-3">
+                Seller dashboard is locked
+              </h1>
+              <p className="text-[15px] text-[#55433d] leading-relaxed mb-7">
+                You can only access selling tools after your seller profile is approved by admin.
+              </p>
+              <Link
+                href={sellerStatus === "PENDING" || sellerStatus === "PENDING_VERIFICATION" || sellerStatus === "REJECTED" || sellerStatus === "SUSPENDED" ? "/profile/become-seller/status" : "/profile/become-seller"}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#974226] px-6 py-3 text-[13px] font-semibold text-white hover:bg-[#b65a3c] transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">verified_user</span>
+                {sellerStatus === "NONE" ? "Apply to become seller" : "View seller status"}
+              </Link>
+            </div>
+          ) : (
+            <>
+          <div className="mb-10 opacity-0 animate-fade-in-up">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-[#974226] flex items-center justify-center">
+                <span className="material-symbols-outlined text-[20px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  storefront
+                </span>
+              </div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#974226]">
+                Seller Dashboard
+              </p>
+            </div>
+            <h1 className="font-[family-name:var(--font-playfair)] text-[36px] md:text-[44px] font-bold text-[#231a11] leading-tight mb-2">
+              Welcome back, {user?.name ?? "Seller"}!
+            </h1>
+            <p className="text-[16px] text-[#55433d]">
+              Your seller score is <strong className="text-[#974226]">{sellerScore}</strong>. {loading ? "Loading seller data..." : "Dashboard data is mapped to backend APIs."}
             </p>
+            {message && <p className="mt-2 text-sm text-[#ba1a1a]">{message}</p>}
           </div>
-        </div>
-        <div className="shrink-0 flex items-center gap-3">
-          <button className="px-5 py-2.5 rounded-full bg-white text-[#231a11] text-[13px] font-bold border border-[#dbc1b9] hover:bg-[#feeadc] transition-all">
-            Review Guidelines
-          </button>
-          <button className="px-5 py-2.5 rounded-full bg-[#974226] text-white text-[13px] font-bold hover:bg-[#b65a3c] transition-all shadow-sm">
-            Schedule Items
-          </button>
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="mt-12 pt-6 border-t border-[#dbc1b9]/20 flex flex-col sm:flex-row items-center justify-between text-[12px] text-[#655d52] gap-4">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-[#231a11]" style={{ fontFamily: "'Playfair Display', serif" }}>REWORE</span>
-          <span>— Curated Circular Luxury Platform</span>
-        </div>
-        <div className="flex items-center gap-6">
-          {["Seller Policies", "Fee Schedule", "Authenticity Standards", "Support Concierge"].map((l) => (
-            <a key={l} href="#" className="hover:text-[#974226] transition-colors">{l}</a>
-          ))}
-        </div>
-      </footer>
+          <div
+            className="mb-10 bg-white rounded-[20px] border border-[#dbc1b9]/30 shadow-[0_4px_20px_-4px_rgba(43,33,24,0.06)] p-5 md:p-6 flex flex-col sm:flex-row items-center gap-5 opacity-0 animate-fade-in-up"
+            style={{ animationDelay: "0.05s" }}
+          >
+            <div className="flex-1 w-full">
+              <div className="flex justify-between text-[12px] text-[#88726c] mb-2 font-medium">
+                <span>Seller Score: {sellerScore}</span>
+                <span>Live Auctions unlocks at {LIVE_THRESHOLD}</span>
+              </div>
+              <div className="w-full h-2.5 bg-[#f2dfd1] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#974226] rounded-full transition-all duration-1000"
+                  style={{ width: `${Math.min((sellerScore / LIVE_THRESHOLD) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+            {canLiveAuction ? (
+              <span className="shrink-0 px-3 py-1.5 rounded-full bg-[#dae9b5] text-[#3f4b25] text-[12px] font-bold border border-[#becc9b]/60 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>gavel</span>
+                Live Auctions unlocked
+              </span>
+            ) : (
+              <span className="shrink-0 text-[13px] text-[#88726c] font-medium">
+                {LIVE_THRESHOLD - sellerScore} pts to Live Auctions
+              </span>
+            )}
+          </div>
+
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10 opacity-0 animate-fade-in-up"
+            style={{ animationDelay: "0.10s" }}
+          >
+            {features.map((f) => (
+              <div
+                key={f.title}
+                className={`bg-white rounded-[20px] p-6 border shadow-[0_4px_20px_-4px_rgba(43,33,24,0.06)] flex flex-col gap-4 transition-all duration-300 ${
+                  f.available
+                    ? "border-[#dbc1b9]/30 hover:shadow-[0_10px_32px_-6px_rgba(43,33,24,0.1)] hover:-translate-y-0.5 cursor-pointer group"
+                    : "border-[#f2dfd1] opacity-60 cursor-not-allowed"
+                }`}
+              >
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-300 ${
+                  f.available
+                    ? "bg-[#ffdbd0]/50 group-hover:bg-[#974226]"
+                    : "bg-[#f2dfd1]"
+                }`}>
+                  <span
+                    className={`material-symbols-outlined text-[22px] transition-colors duration-300 ${
+                      f.available ? "text-[#974226] group-hover:text-white" : "text-[#88726c]"
+                    }`}
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    {f.icon}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#974226] mb-2">{f.stat}</p>
+                  <h3 className="font-[family-name:var(--font-playfair)] text-[17px] font-semibold text-[#231a11] mb-1.5">
+                    {f.title}
+                  </h3>
+                  <p className="text-[13px] text-[#88726c] leading-relaxed">{f.description}</p>
+                </div>
+                {f.available && (
+                  <Link href={f.href} className="mt-auto flex items-center gap-1 text-[12px] font-semibold text-[#974226] group-hover:gap-2 transition-all">
+                    <span>Open</span>
+                    <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="text-center opacity-0 animate-fade-in-up"
+            style={{ animationDelay: "0.18s" }}
+          >
+            <div className="inline-flex items-center gap-2 bg-[#f2dfd1]/40 border border-[#dbc1b9]/30 rounded-full px-5 py-2.5 text-[13px] text-[#88726c]">
+              <span className="material-symbols-outlined text-[16px]">inventory_2</span>
+              Product creation and listing management are connected to backend APIs.
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <Link href="/profile" className="text-[13px] font-semibold text-[#974226] hover:underline underline-offset-4">
+              ← Back to Profile
+            </Link>
+          </div>
+            </>
+          )}
+        </main>
+      </div>
     </>
   );
 }
+
+

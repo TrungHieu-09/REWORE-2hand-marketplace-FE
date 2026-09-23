@@ -1,41 +1,5 @@
 "use client";
 
-const WISHLIST_ITEMS = [
-  {
-    id: "wl1",
-    name: "Linen Oversized Blazer",
-    era: "90s",
-    price: "₫ 420,000",
-    tag: "Vintage",
-    tagColor: "#3f4b25",
-    tagBg: "#dae9b5",
-    img: "/product1.png",
-    saved: "142 saved",
-  },
-  {
-    id: "wl2",
-    name: "Structured Leather Satchel",
-    era: "80s",
-    price: "₫ 680,000",
-    tag: "Rare Find",
-    tagColor: "#7b3a10",
-    tagBg: "#feeadc",
-    img: "/product2.png",
-    saved: "89 saved",
-  },
-  {
-    id: "wl3",
-    name: "Floral Midi Skirt",
-    era: "70s",
-    price: "₫ 295,000",
-    tag: "On Auction",
-    tagColor: "#fff",
-    tagBg: "#b65a3c",
-    img: "/product3.png",
-    saved: "214 saved",
-  },
-];
-
 export default function WishlistIntro() {
   return (
     <section className="wishlist-intro-section" id="wishlist-intro">
@@ -82,55 +46,25 @@ export default function WishlistIntro() {
           </a>
         </div>
 
-        {/* ── Right mock cards ── */}
         <div className="wishlist-intro-cards">
-          {WISHLIST_ITEMS.map((item, i) => (
-            <div
-              key={item.id}
-              className="wishlist-preview-card"
-              style={{ animationDelay: `${i * 0.12}s` }}
-            >
-              {/* Image */}
-              <div className="wishlist-preview-img-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.img}
-                  alt={item.name}
-                  className="wishlist-preview-img"
-                />
-                <span
-                  className="wishlist-preview-era"
-                >
-                  {item.era}
-                </span>
-                <span
-                  className="material-symbols-outlined wishlist-preview-heart"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  favorite
-                </span>
+          <div className="wishlist-preview-card">
+            <div className="wishlist-preview-img-wrap">
+              <div className="admin-image-placeholder h-full">
+                <span className="material-symbols-outlined">favorite</span>
+                <span>Wishlist trống</span>
               </div>
-              {/* Info */}
-              <div className="wishlist-preview-body">
-                <div className="wishlist-preview-top">
-                  <span
-                    className="wishlist-preview-tag"
-                    style={{ color: item.tagColor, background: item.tagBg }}
-                  >
-                    {item.tag}
-                  </span>
-                  <span className="wishlist-preview-saved">
-                    <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
-                      group
-                    </span>
-                    {item.saved}
-                  </span>
-                </div>
-                <p className="wishlist-preview-name">{item.name}</p>
-                <p className="wishlist-preview-price">{item.price}</p>
-              </div>
+              <span
+                className="material-symbols-outlined wishlist-preview-heart"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                favorite
+              </span>
             </div>
-          ))}
+            <div className="wishlist-preview-body">
+              <p className="wishlist-preview-name">Sản phẩm đã lưu sẽ hiện ở đây</p>
+              <p className="wishlist-preview-price">Đăng nhập để đồng bộ wishlist từ backend.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

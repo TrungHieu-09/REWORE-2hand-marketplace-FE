@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { AuctionCategory } from "../_data/mock-auctions";
-import { CATEGORIES } from "../_data/mock-auctions";
+import type { AuctionCategory } from "../_types";
 
 const SORT_OPTIONS = [
   "Ending Soon",
@@ -14,11 +13,13 @@ const SORT_OPTIONS = [
 
 interface CategoryFilterBarProps {
   active: AuctionCategory;
+  categories?: AuctionCategory[];
   onChange: (cat: AuctionCategory) => void;
 }
 
 export default function CategoryFilterBar({
   active,
+  categories = ["All"],
   onChange,
 }: CategoryFilterBarProps) {
   const [sortOpen, setSortOpen] = useState(false);
@@ -26,9 +27,8 @@ export default function CategoryFilterBar({
 
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-      {/* Category Chips */}
       <div className="flex flex-wrap gap-2">
-        {CATEGORIES.map((cat) => {
+        {categories.map((cat) => {
           const isActive = cat === active;
           return (
             <button
@@ -50,7 +50,6 @@ export default function CategoryFilterBar({
         })}
       </div>
 
-      {/* Sort Dropdown */}
       <div className="relative">
         <button
           onClick={() => setSortOpen((p) => !p)}
