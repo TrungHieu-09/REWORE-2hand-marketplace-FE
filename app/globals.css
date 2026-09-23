@@ -3081,12 +3081,13 @@ a {
   font-size: 20px;
   color: var(--primary);
   background: rgba(151, 66, 38, 0.1);
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex !important;
   align-items: center;
   justify-content: center;
+  text-align: center;
   flex-shrink: 0;
 }
 .wishlist-intro-cta {

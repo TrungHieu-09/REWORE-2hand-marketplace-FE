@@ -8,10 +8,12 @@ import { useSeller } from "../context/SellerContext";
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { isLoggedIn, logout, user } = useAuth();
   const { sellerState } = useSeller();
 
   useEffect(() => {
+    setMounted(true);
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
@@ -37,9 +39,9 @@ export default function Navbar() {
           ) : (
             <>
               <Link href="/#how-it-works">How it Works</Link>
-              <Link href={isLoggedIn ? "/shop" : "/#drops"}>Shop</Link>
-              <Link href={isLoggedIn ? "/auctions" : "/#trust"}>Auctions</Link>
-              <Link href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"}>Wishlist</Link>
+              <Link href={mounted && isLoggedIn ? "/shop" : "/#drops"}>Shop</Link>
+              <Link href={mounted && isLoggedIn ? "/auctions" : "/#trust"}>Auctions</Link>
+              <Link href={mounted && isLoggedIn ? "/wishlist" : "/#wishlist-intro"}>Wishlist</Link>
             </>
           )}
 

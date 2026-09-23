@@ -25,9 +25,9 @@ export default function WishlistIntro() {
 
           <ul className="wishlist-intro-perks">
             {[
-              { icon: "notifications_active", text: "Price drop & restock alerts" },
-              { icon: "gavel",               text: "Track live auction items" },
-              { icon: "share",               text: "Share your wishlist with friends" },
+              { icon: "notifications", text: "Price drop & restock alerts" },
+              { icon: "balance",               text: "Track live auction items" },
+              { icon: "group",               text: "Share your wishlist with friends" },
             ].map((p) => (
               <li key={p.icon} className="wishlist-intro-perk">
                 <span className="material-symbols-outlined wishlist-perk-icon">
