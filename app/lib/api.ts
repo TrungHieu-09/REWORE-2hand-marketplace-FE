@@ -34,6 +34,8 @@ export type SellerStatus =
   | "APPROVED"
   | "REJECTED"
   | "SUSPENDED";
+export type SellerSubscriptionPlan = "FREE" | "PREMIUM";
+export type SellerSubscriptionRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type ReportStatus = "OPEN" | "RESOLVED" | "DISMISSED";
 export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
 export type OrderStatus =
@@ -91,6 +93,8 @@ export type User = {
   bannedReason?: string | null;
   bannedAt?: string | null;
   sellerStatus?: SellerStatus;
+  sellerSubscriptionPlan?: SellerSubscriptionPlan;
+  sellerSubscriptionExpiresAt?: string | null;
   sellerApprovedAt?: string | null;
   sellerSuspendedReason?: string | null;
   sellerProfile?: {
@@ -104,6 +108,8 @@ export type User = {
     id_card_back_url?: string | null;
     selfie_url?: string | null;
     status: SellerApplicationStatus;
+    subscriptionPlan?: SellerSubscriptionPlan;
+    subscriptionExpiresAt?: string | null;
     pickupAddress?: string | null;
     bankName?: string | null;
     bankAccountName?: string | null;
@@ -227,6 +233,7 @@ export type Order = {
   shippingFee: number;
   paymentStatus?: PaymentStatus;
   status: OrderStatus;
+  qrCodeRef?: string | null;
   shippingAddress: string | null;
   note: string | null;
   paidAt: string | null;
@@ -234,7 +241,7 @@ export type Order = {
   deliveredAt: string | null;
   buyer?: Pick<User, "id" | "name" | "avatar" | "email">;
   seller?: SellerPublic;
-  product?: Pick<Product, "id" | "title" | "images" | "category" | "price"> | null;
+  product?: Pick<Product, "id" | "title" | "images" | "category" | "price" | "status" | "availabilityStatus"> | null;
   auction?: Pick<Auction, "id" | "currentBid" | "endTime"> | null;
   createdAt: string;
   updatedAt: string;
@@ -246,6 +253,17 @@ export type WishlistItem = {
   productId: string;
   product: Product;
   createdAt: string;
+};
+
+export type CartItem = {
+  id: string;
+  userId: string;
+  productId: string;
+  product: Product;
+  isAvailable: boolean;
+  unavailableReason: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type SellerApplication = {
@@ -273,6 +291,8 @@ export type SellerApplication = {
   sellingDescription?: string | null;
   acceptedSellerTerms?: boolean;
   status: SellerApplicationStatus;
+  subscriptionPlan?: SellerSubscriptionPlan;
+  subscriptionExpiresAt?: string | null;
   rejectionReason: string | null;
   reviewedByAdminId: string | null;
   reviewedAt: string | null;
@@ -308,6 +328,40 @@ export type SellerApplicationResponse = {
   application: SellerApplication;
 };
 
+export type SellerSubscriptionRequest = {
+  id: string;
+  sellerProfileId: string;
+  plan: SellerSubscriptionPlan;
+  durationMonths: number;
+  amount: number | null;
+  paymentReference: string | null;
+  note: string | null;
+  status: SellerSubscriptionRequestStatus;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  rejectedReason: string | null;
+  sellerProfile?: SellerApplication;
+  reviewedByAdmin?: Pick<User, "id" | "email" | "name"> | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SellerSubscriptionSummary = {
+  plan: SellerSubscriptionPlan;
+  subscriptionExpiresAt: string | null;
+  monthlyFreeProductLimit: number;
+  premiumMonthlyPrice: number;
+  pendingRequest: SellerSubscriptionRequest | null;
+};
+
+export type AuctionEligibility = {
+  eligible: boolean;
+  requiredPlan: "PREMIUM";
+  currentPlan: SellerSubscriptionPlan;
+  subscriptionActive: boolean;
+  subscriptionExpiresAt: string | null;
+};
+
 export type SellerReport = {
   id: string;
   reporterId: string;
@@ -324,6 +378,13 @@ export type SellerReport = {
   seller?: SellerPublic;
   createdAt: string;
   updatedAt: string;
+};
+
+export type CreateReportPayload = {
+  targetType: "USER" | "PRODUCT" | "ORDER";
+  targetId: string;
+  reason: string;
+  description?: string;
 };
 
 export type ProductListQuery = {
@@ -375,6 +436,12 @@ export type AdminProductQuery = PageQuery & {
   status?: ProductStatus | "ALL";
   sellerId?: string;
   sortBy?: "createdAt" | "price" | "title" | "status" | "viewCount" | "availabilityStatus";
+  sortOrder?: "asc" | "desc";
+};
+
+export type AdminSubscriptionRequestQuery = PageQuery & {
+  status?: SellerSubscriptionRequestStatus | "ALL";
+  sortBy?: "createdAt" | "reviewedAt" | "status" | "amount" | "durationMonths";
   sortOrder?: "asc" | "desc";
 };
 
@@ -645,6 +712,14 @@ export const auctionsApi = {
         auth: true,
       }
     ),
+  close: (id: string) =>
+    apiRequest<{ success: true; message: string; data: Auction }>(
+      `/api/auctions/${id}/close`,
+      {
+        method: "POST",
+        auth: true,
+      }
+    ),
 };
 
 export const bidsApi = {
@@ -669,6 +744,21 @@ export const ordersApi = {
     apiRequest<ApiListResponse<Order>>(`/api/orders${toQueryString(query)}`, {
       auth: true,
     }),
+  create: (payload: { productId: string; shippingAddress?: string; note?: string }) =>
+    apiRequest<ApiItemResponse<Order> & { message: string }>("/api/orders", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(payload),
+    }),
+  uploadPaymentProof: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append("paymentProof", file);
+    return apiRequest<ApiItemResponse<Order> & { message: string }>(`/api/orders/${id}/payment-proof`, {
+      method: "POST",
+      auth: true,
+      body: formData,
+    });
+  },
   get: (id: string) =>
     apiRequest<ApiItemResponse<Order>>(`/api/orders/${id}`, { auth: true }),
   updateStatus: (id: string, status: OrderStatus) =>
@@ -677,6 +767,29 @@ export const ordersApi = {
       auth: true,
       body: JSON.stringify({ status }),
     }),
+};
+
+export const cartApi = {
+  list: (query?: PageQuery) =>
+    apiRequest<ApiListResponse<CartItem>>(`/api/cart${toQueryString(query)}`, {
+      auth: true,
+    }),
+  add: (productId: string) =>
+    apiRequest<ApiItemResponse<CartItem>>("/api/cart", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify({ productId }),
+    }),
+  remove: (productId: string) =>
+    apiRequest<{ success: true; message: string }>(`/api/cart/${productId}`, {
+      method: "DELETE",
+      auth: true,
+    }),
+  check: (productId: string) =>
+    apiRequest<{ success: true; isInCart: boolean; item: CartItem | null }>(
+      `/api/cart/check/${productId}`,
+      { auth: true }
+    ),
 };
 
 export const wishlistApi = {
@@ -703,11 +816,47 @@ export const wishlistApi = {
     ),
 };
 
+export const reportsApi = {
+  create: (payload: CreateReportPayload) =>
+    apiRequest<ApiItemResponse<SellerReport> & { message: string }>("/api/reports", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(payload),
+    }),
+  mine: (query?: PageQuery) =>
+    apiRequest<ApiListResponse<SellerReport>>(`/api/reports/my${toQueryString(query)}`, {
+      auth: true,
+    }),
+};
+
 export const sellerApi = {
   currentApplication: () =>
     apiRequest<SellerApplicationResponse>("/api/seller/application", {
       auth: true,
     }),
+  subscription: () =>
+    apiRequest<ApiItemResponse<SellerSubscriptionSummary>>("/api/seller/subscription", {
+      auth: true,
+    }),
+  subscriptionRequests: () =>
+    apiRequest<ApiItemResponse<SellerSubscriptionRequest[]> | { success: true; data: SellerSubscriptionRequest[] }>(
+      "/api/seller/subscription-requests",
+      { auth: true }
+    ),
+  requestPremium: (payload?: { durationMonths?: number; paymentReference?: string; note?: string }) =>
+    apiRequest<ApiItemResponse<SellerSubscriptionRequest> & { message: string }>(
+      "/api/seller/subscription-requests",
+      {
+        method: "POST",
+        auth: true,
+        body: JSON.stringify({ plan: "PREMIUM", durationMonths: 1, ...payload }),
+      }
+    ),
+  auctionEligibility: () =>
+    apiRequest<ApiItemResponse<AuctionEligibility> | (AuctionEligibility & { success: true })>(
+      "/api/seller/auction-eligibility",
+      { auth: true }
+    ),
   submitApplication: (payload: CreateSellerApplicationPayload) => {
     const formData = new FormData();
     formData.append("shopName", payload.shopName);
@@ -765,6 +914,45 @@ export const adminApi = {
       auth: true,
       body: JSON.stringify({ reason }),
     }),
+  updateSellerSubscription: (
+    id: string,
+    payload: { plan: SellerSubscriptionPlan; expiresAt?: string | null; note?: string }
+  ) =>
+    apiRequest<{
+      success: true;
+      message: string;
+      data: SellerApplication;
+    }>(`/api/admin/sellers/${id}/subscription`, {
+      method: "PATCH",
+      auth: true,
+      body: JSON.stringify(payload),
+    }),
+  subscriptionRequests: (query?: AdminSubscriptionRequestQuery) =>
+    apiRequest<ApiListResponse<SellerSubscriptionRequest>>(
+      `/api/admin/subscription-requests${toQueryString({
+        ...query,
+        status: query?.status === "ALL" ? "ALL" : query?.status,
+      })}`,
+      { auth: true }
+    ),
+  approveSubscriptionRequest: (id: string, payload?: { expiresAt?: string; note?: string }) =>
+    apiRequest<ApiItemResponse<SellerSubscriptionRequest> & { message: string; subscriptionExpiresAt: string }>(
+      `/api/admin/subscription-requests/${id}/approve`,
+      {
+        method: "POST",
+        auth: true,
+        body: JSON.stringify(payload || {}),
+      }
+    ),
+  rejectSubscriptionRequest: (id: string, reason: string) =>
+    apiRequest<ApiItemResponse<SellerSubscriptionRequest> & { message: string }>(
+      `/api/admin/subscription-requests/${id}/reject`,
+      {
+        method: "POST",
+        auth: true,
+        body: JSON.stringify({ reason }),
+      }
+    ),
   reports: (query?: AdminReportQuery) =>
     apiRequest<ApiListResponse<SellerReport>>(
       `/api/admin/reports${toQueryString({

@@ -8,7 +8,7 @@ import { useSeller } from "../context/SellerContext";
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isLoggedIn, logout, user } = useAuth();
+  const { isLoggedIn, isLoading, logout, user } = useAuth();
   const { sellerState } = useSeller();
 
   useEffect(() => {
@@ -17,7 +17,9 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isAdmin = user?.role === "ADMIN";
+  const authReady = !isLoading;
+  const authed = authReady && isLoggedIn;
+  const isAdmin = authReady && user?.role === "ADMIN";
   const hasSellerApplication = ["pending", "rejected", "suspended"].includes(sellerState.verificationStatus);
   const sellHref = sellerState.isSeller
     ? "/seller/dashboard"
@@ -37,13 +39,14 @@ export default function Navbar() {
           ) : (
             <>
               <Link href="/#how-it-works">How it Works</Link>
-              <Link href={isLoggedIn ? "/shop" : "/#drops"}>Shop</Link>
-              <Link href={isLoggedIn ? "/auctions" : "/#trust"}>Auctions</Link>
-              <Link href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"}>Wishlist</Link>
+              <Link href={authed ? "/shop" : "/#drops"}>Shop</Link>
+              <Link href={authed ? "/auctions" : "/#trust"}>Auctions</Link>
+              <Link href={authed ? "/wishlist" : "/#wishlist-intro"}>Wishlist</Link>
+              {authed && <Link href="/cart">Cart</Link>}
             </>
           )}
 
-          {isLoggedIn && !isAdmin && (
+          {authed && !isAdmin && (
             <Link
               href={sellHref}
               className={`font-semibold transition-colors ${
@@ -59,7 +62,7 @@ export default function Navbar() {
         </div>
 
         <div className="nav-actions">
-          {isLoggedIn ? (
+          {authed ? (
             <div className="relative group">
               <button
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-[#feeadc] text-[#974226] hover:bg-[#f8e5d6] transition-colors"
@@ -140,12 +143,13 @@ export default function Navbar() {
         ) : (
           <>
             <Link href="/#how-it-works" onClick={() => setMobileOpen(false)}>How it Works</Link>
-            <Link href={isLoggedIn ? "/shop" : "/#drops"} onClick={() => setMobileOpen(false)}>Shop</Link>
-            <Link href={isLoggedIn ? "/auctions" : "/#trust"} onClick={() => setMobileOpen(false)}>Auctions</Link>
-            <Link href={isLoggedIn ? "/wishlist" : "/#wishlist-intro"} onClick={() => setMobileOpen(false)}>Wishlist</Link>
+            <Link href={authed ? "/shop" : "/#drops"} onClick={() => setMobileOpen(false)}>Shop</Link>
+            <Link href={authed ? "/auctions" : "/#trust"} onClick={() => setMobileOpen(false)}>Auctions</Link>
+            <Link href={authed ? "/wishlist" : "/#wishlist-intro"} onClick={() => setMobileOpen(false)}>Wishlist</Link>
+            {authed && <Link href="/cart" onClick={() => setMobileOpen(false)}>Cart</Link>}
           </>
         )}
-        {isLoggedIn && !isAdmin && (
+        {authed && !isAdmin && (
           <Link
             href={sellHref}
             className="font-semibold text-[#974226]"
@@ -155,7 +159,7 @@ export default function Navbar() {
           </Link>
         )}
 
-        {isLoggedIn ? (
+        {authed ? (
           <>
             <hr />
             {isAdmin && (

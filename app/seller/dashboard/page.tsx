@@ -10,10 +10,20 @@ import {
   auctionsApi,
   ordersApi,
   productsApi,
+  sellerApi,
   type Auction,
+  type AuctionEligibility,
   type Order,
   type Product,
+  type SellerSubscriptionSummary,
 } from "@/app/lib/api";
+
+const normalizeEligibility = (
+  response: AuctionEligibility | { data: AuctionEligibility }
+) => ("data" in response ? response.data : response);
+
+const formatSubscriptionExpiry = (value?: string | null) =>
+  value ? new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value)) : "Không giới hạn";
 
 export default function SellerDashboard() {
   const { user } = useAuth();
@@ -21,13 +31,19 @@ export default function SellerDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [eligibility, setEligibility] = useState<AuctionEligibility | null>(null);
+  const [subscriptionSummary, setSubscriptionSummary] = useState<SellerSubscriptionSummary | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [premiumReference, setPremiumReference] = useState("");
+  const [premiumNote, setPremiumNote] = useState("");
+  const [requestingPremium, setRequestingPremium] = useState(false);
 
   const sellerStatus = user?.sellerStatus ?? (user?.role === "SELLER" ? "APPROVED" : "NONE");
-  const sellerScore = user?.reputation ?? 0;
-  const LIVE_THRESHOLD = 75;
-  const canLiveAuction = sellerScore >= LIVE_THRESHOLD;
+  const canLiveAuction = eligibility?.eligible ?? false;
+  const currentPlan = eligibility?.currentPlan ?? user?.sellerSubscriptionPlan ?? "FREE";
+  const subscriptionExpiresAt = eligibility?.subscriptionExpiresAt ?? user?.sellerSubscriptionExpiresAt ?? null;
+  const subscriptionActive = eligibility?.subscriptionActive ?? currentPlan === "PREMIUM";
   const isSeller = user?.role === "SELLER" && sellerStatus === "APPROVED";
 
   useEffect(() => {
@@ -44,7 +60,9 @@ export default function SellerDashboard() {
       productsApi.list({ sellerId: user.id, limit: 50 }),
       auctionsApi.list({ limit: 50 }),
       ordersApi.list({ role: "seller", limit: 50 }),
-    ]).then(([productResult, auctionResult, orderResult]) => {
+      sellerApi.auctionEligibility(),
+      sellerApi.subscription(),
+    ]).then(([productResult, auctionResult, orderResult, eligibilityResult, subscriptionResult]) => {
       if (cancelled) return;
 
       if (productResult.status === "fulfilled") setProducts(productResult.value.data);
@@ -52,8 +70,16 @@ export default function SellerDashboard() {
         setAuctions(auctionResult.value.data.filter((auction) => auction.sellerId === user.id));
       }
       if (orderResult.status === "fulfilled") setOrders(orderResult.value.data);
+      if (eligibilityResult.status === "fulfilled") {
+        setEligibility(normalizeEligibility(eligibilityResult.value));
+      } else {
+        setEligibility(null);
+      }
+      if (subscriptionResult.status === "fulfilled") {
+        setSubscriptionSummary(subscriptionResult.value.data);
+      }
 
-      const firstError = [productResult, auctionResult, orderResult].find(
+      const firstError = [productResult, auctionResult, orderResult, eligibilityResult, subscriptionResult].find(
         (result) => result.status === "rejected"
       );
       if (firstError?.status === "rejected") {
@@ -73,6 +99,26 @@ export default function SellerDashboard() {
     .filter((order) => ["PAID", "SHIPPED", "DELIVERED"].includes(order.status))
     .reduce((sum, order) => sum + order.totalPrice + order.shippingFee, 0);
 
+  const requestPremium = async () => {
+    setRequestingPremium(true);
+    setMessage("");
+    try {
+      const res = await sellerApi.requestPremium({
+        durationMonths: 1,
+        paymentReference: premiumReference.trim() || undefined,
+        note: premiumNote.trim() || undefined,
+      });
+      setSubscriptionSummary((current) => current ? { ...current, pendingRequest: res.data } : current);
+      setPremiumReference("");
+      setPremiumNote("");
+      setMessage("Đã gửi yêu cầu Premium. Admin sẽ xác nhận thanh toán thủ công.");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Không thể gửi yêu cầu Premium.");
+    } finally {
+      setRequestingPremium(false);
+    }
+  };
+
   const features = [
     {
       icon: "add_circle",
@@ -91,13 +137,23 @@ export default function SellerDashboard() {
       stat: `${products.filter((product) => product.status === "ACTIVE").length} active`,
     },
     {
+      icon: "receipt_long",
+      title: "Orders",
+      description: "Confirm shipments after admin verifies manual transfer payments.",
+      available: true,
+      href: "/seller/orders",
+      stat: `${orders.length} orders`,
+    },
+    {
       icon: "gavel",
       title: "Live Auctions",
       description: canLiveAuction
-        ? "Loaded from /api/auctions and filtered by seller id."
-        : `Unlock at seller score ${LIVE_THRESHOLD}. You need ${LIVE_THRESHOLD - sellerScore} more points.`,
+        ? "Gói Premium đang active, shop có thể tạo phòng đấu giá."
+        : loading
+        ? "Đang kiểm tra gói Premium..."
+        : "Đăng ký gói Premium để mở tính năng tạo phòng đấu giá.",
       available: canLiveAuction,
-      href: "#",
+      href: "/seller/auctions",
       stat: `${auctions.filter((auction) => auction.status === "LIVE").length} live`,
     },
     {
@@ -151,7 +207,7 @@ export default function SellerDashboard() {
               Welcome back, {user?.name ?? "Seller"}!
             </h1>
             <p className="text-[16px] text-[#55433d]">
-              Your seller score is <strong className="text-[#974226]">{sellerScore}</strong>. {loading ? "Loading seller data..." : "Dashboard data is mapped to backend APIs."}
+              Gói hiện tại: <strong className="text-[#974226]">{currentPlan}</strong>. {loading ? "Loading seller data..." : "Dashboard data is mapped to backend APIs."}
             </p>
             {message && <p className="mt-2 text-sm text-[#ba1a1a]">{message}</p>}
           </div>
@@ -162,13 +218,13 @@ export default function SellerDashboard() {
           >
             <div className="flex-1 w-full">
               <div className="flex justify-between text-[12px] text-[#88726c] mb-2 font-medium">
-                <span>Seller Score: {sellerScore}</span>
-                <span>Live Auctions unlocks at {LIVE_THRESHOLD}</span>
+                <span>Seller plan: {currentPlan}</span>
+                <span>{subscriptionActive ? `Hết hạn: ${formatSubscriptionExpiry(subscriptionExpiresAt)}` : "Live Auctions yêu cầu Premium"}</span>
               </div>
               <div className="w-full h-2.5 bg-[#f2dfd1] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[#974226] rounded-full transition-all duration-1000"
-                  style={{ width: `${Math.min((sellerScore / LIVE_THRESHOLD) * 100, 100)}%` }}
+                  style={{ width: `${canLiveAuction ? 100 : 35}%` }}
                 />
               </div>
             </div>
@@ -179,13 +235,66 @@ export default function SellerDashboard() {
               </span>
             ) : (
               <span className="shrink-0 text-[13px] text-[#88726c] font-medium">
-                {LIVE_THRESHOLD - sellerScore} pts to Live Auctions
+                {loading ? "Checking Live Auctions" : "Upgrade Premium to unlock"}
               </span>
             )}
           </div>
 
+          {!subscriptionActive && (
+            <section
+              className="mb-10 bg-white rounded-[20px] border border-[#dbc1b9]/30 shadow-[0_4px_20px_-4px_rgba(43,33,24,0.06)] p-5 md:p-6 opacity-0 animate-fade-in-up"
+              style={{ animationDelay: "0.08s" }}
+            >
+              <div className="flex flex-col lg:flex-row gap-5 lg:items-end">
+                <div className="flex-1">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#974226] mb-2">
+                    Premium Seller
+                  </p>
+                  <h2 className="font-[family-name:var(--font-playfair)] text-[24px] font-semibold text-[#231a11] mb-2">
+                    Mở khoá đấu giá và đăng sản phẩm không giới hạn
+                  </h2>
+                  <p className="text-[13px] text-[#88726c] leading-relaxed">
+                    Gói Free đăng tối đa {subscriptionSummary?.monthlyFreeProductLimit ?? 10} sản phẩm/tháng. Premium dự kiến ₫{new Intl.NumberFormat("vi-VN").format(subscriptionSummary?.premiumMonthlyPrice ?? 75000)}/tháng, admin sẽ xác nhận sau khi shop chuyển khoản.
+                  </p>
+                </div>
+                {subscriptionSummary?.pendingRequest ? (
+                  <div className="rounded-[18px] border border-[#dbc1b9]/60 bg-[#fff8f5] px-5 py-4 min-w-[260px]">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#974226]">Đang chờ duyệt</p>
+                    <p className="mt-1 text-[13px] text-[#55433d]">
+                      Yêu cầu {subscriptionSummary.pendingRequest.durationMonths} tháng đang chờ admin xác nhận.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 w-full lg:max-w-[420px]">
+                    <input
+                      className="admin-input"
+                      value={premiumReference}
+                      onChange={(event) => setPremiumReference(event.target.value)}
+                      placeholder="Mã giao dịch / nội dung chuyển khoản"
+                    />
+                    <textarea
+                      className="admin-textarea"
+                      value={premiumNote}
+                      onChange={(event) => setPremiumNote(event.target.value)}
+                      placeholder="Ghi chú cho admin"
+                    />
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-[#974226] px-5 py-3 text-[13px] font-semibold text-white hover:bg-[#b65a3c] transition-colors disabled:opacity-60"
+                      disabled={requestingPremium}
+                      onClick={requestPremium}
+                    >
+                      <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
+                      {requestingPremium ? "Đang gửi..." : "Gửi yêu cầu Premium"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           <div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10 opacity-0 animate-fade-in-up"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-10 opacity-0 animate-fade-in-up"
             style={{ animationDelay: "0.10s" }}
           >
             {features.map((f) => (

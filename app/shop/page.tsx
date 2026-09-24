@@ -14,7 +14,7 @@ import {
   type Product as ApiProduct,
 } from "@/app/lib/api";
 
-type Badge = "available" | "upcoming" | "auction";
+type Badge = "available" | "upcoming" | "auction" | "held" | "sold";
 
 interface Product {
   id: number;
@@ -42,6 +42,8 @@ const BADGE_CONFIG = {
   available: { icon: "check_circle", text: "AVAILABLE", cls: "badge-available" },
   upcoming:  { icon: "schedule",     text: "UPCOMING DROP", cls: "badge-upcoming" },
   auction:   { icon: "gavel",        text: "IN AUCTION", cls: "badge-auction" },
+  held:      { icon: "lock_clock",    text: "ĐANG GIỮ", cls: "badge-held" },
+  sold:      { icon: "block",         text: "HẾT HÀNG", cls: "badge-sold" },
 };
 
 function formatVnd(amount: number) {
@@ -61,6 +63,17 @@ function conditionLabel(condition: ApiProduct["condition"]) {
 }
 
 function mapApiProduct(product: ApiProduct, index: number, wishlistIds: Set<string>): Product {
+  const badge: Badge =
+    product.status === "SOLD" || product.availabilityStatus === "sold"
+      ? "sold"
+      : product.status === "AUCTION"
+      ? "auction"
+      : product.availabilityStatus === "upcoming_drop"
+      ? "upcoming"
+      : product.availabilityStatus === "held"
+      ? "held"
+      : "available";
+
   return {
     id: index + 1,
     apiId: product.id,
@@ -72,9 +85,9 @@ function mapApiProduct(product: ApiProduct, index: number, wishlistIds: Set<stri
       .join(" · "),
     price: product.price,
     priceLabel: formatVnd(product.price),
-    badge: "available",
-    badgeLabel: "AVAILABLE",
-    cta: "Hold Item",
+    badge,
+    badgeLabel: BADGE_CONFIG[badge].text,
+    cta: badge === "available" ? "Mua ngay" : "Xem chi tiết",
     detail: `${product._count?.wishlistItems ?? 0} saved · ${product.viewCount} views`,
     detailIcon: "favorite",
     wishlist: wishlistIds.has(product.id),
@@ -183,9 +196,9 @@ export default function ShopPage() {
               </div>
 
               <div className="sp-quick-tabs">
-                {(["all", "available", "upcoming", "auction"] as const).map(f => (
+                {(["all", "available", "upcoming", "auction", "sold"] as const).map(f => (
                   <button key={f} className={`sp-quick-tab${activeFilter === f ? " active" : ""}`} onClick={() => setActiveFilter(f)}>
-                    {f === "all" ? "All" : f === "available" ? "Available" : f === "upcoming" ? "Upcoming" : "Auction"}
+                    {f === "all" ? "All" : f === "available" ? "Available" : f === "upcoming" ? "Upcoming" : f === "auction" ? "Auction" : "Sold"}
                   </button>
                 ))}
               </div>
@@ -310,7 +323,7 @@ export default function ShopPage() {
                             <span className="material-symbols-outlined" style={{ fontSize: 15 }}>{p.detailIcon}</span>
                             {p.detail}
                           </div>
-                          <Link href={`/products/${p.apiId}`} className={`sp-cta${p.badge === "auction" ? " auction" : p.badge === "upcoming" ? " upcoming" : ""}`}>
+                          <Link href={`/products/${p.apiId}`} className={`sp-cta${p.badge === "auction" ? " auction" : p.badge === "upcoming" ? " upcoming" : p.badge === "sold" ? " disabled" : ""}`}>
                             {p.cta}
                           </Link>
                         </div>

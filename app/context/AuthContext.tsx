@@ -54,37 +54,48 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => getStoredToken());
-  const [user, setUser] = useState<AuthUser | User | null>(() => getStoredUser());
-  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getStoredToken()));
-  const [isLoading, setIsLoading] = useState(() => Boolean(getStoredToken()));
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | User | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = getStoredToken();
-    if (storedToken) {
-      authApi
-        .me()
-        .then((res) => {
-          setUser(res.user);
-          setStoredAuth(storedToken, res.user);
-        })
-        .catch(() => {
-          clearStoredAuth();
-          setToken(null);
-          setUser(null);
-          setIsLoggedIn(false);
-        })
-        .finally(() => setIsLoading(false));
-    }
+    const timer = window.setTimeout(() => {
+      const storedToken = getStoredToken();
+      if (storedToken) {
+        setToken(storedToken);
+        setUser(getStoredUser());
+        setIsLoggedIn(true);
+        authApi
+          .me()
+          .then((res) => {
+            setUser(res.user);
+            setStoredAuth(storedToken, res.user);
+          })
+          .catch(() => {
+            clearStoredAuth();
+            setToken(null);
+            setUser(null);
+            setIsLoggedIn(false);
+          })
+          .finally(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
+      }
+    }, 0);
 
     const handler = () => {
       const nextToken = getStoredToken();
       setToken(nextToken);
       setUser(getStoredUser());
       setIsLoggedIn(Boolean(nextToken));
+      setIsLoading(false);
     };
     window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("storage", handler);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
