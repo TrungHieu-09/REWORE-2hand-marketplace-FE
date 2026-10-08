@@ -74,6 +74,7 @@ export default function TabSettings() {
           <div className="pt-6">
             <button
               type="button"
+              onClick={() => alert("Thông tin cá nhân và cài đặt đã được lưu thành công! ✓")}
               className="py-2.5 px-6 bg-[#b65a3c] text-white rounded-xl text-sm font-semibold shadow-md shadow-[#b65a3c]/30 hover:bg-[#974226] hover:-translate-y-0.5 transition-all"
             >
               Save Changes

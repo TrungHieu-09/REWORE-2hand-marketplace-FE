@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSeller } from "../../context/SellerContext";
+import { useHold } from "../../context/HoldContext";
 
-export default function ProfileRightSidebar() {
+interface ProfileRightSidebarProps {
+  onOpenSettings?: () => void;
+}
+
+export default function ProfileRightSidebar({ onOpenSettings }: ProfileRightSidebarProps) {
   const [scoreVisible, setScoreVisible] = useState(false);
   const { sellerState } = useSeller();
   const { isSeller, sellerScore, verificationStatus } = sellerState;
+  const { reputationScore } = useHold();
 
-  const BUYER_SCORE = 86;
+  const BUYER_SCORE = reputationScore;
 
   useEffect(() => {
     const t = setTimeout(() => setScoreVisible(true), 600);
@@ -188,9 +194,21 @@ export default function ProfileRightSidebar() {
                   {value}
                 </span>
               </div>
-              <a href="#" className="text-[12px] font-semibold text-[#974226] hover:underline underline-offset-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (action === "View" && isSeller) {
+                    window.location.href = "/seller/dashboard";
+                  } else if (onOpenSettings) {
+                    onOpenSettings();
+                  } else {
+                    alert(`Update ${label}`);
+                  }
+                }}
+                className="text-[12px] font-semibold text-[#974226] hover:underline underline-offset-4 cursor-pointer"
+              >
                 {action}
-              </a>
+              </button>
             </div>
           ))}
         </div>

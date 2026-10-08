@@ -7,11 +7,11 @@ export default function CtaBanner() {
             <h2 className="cta-title">Ready to give your wardrobe a second story?</h2>
             <p className="cta-sub">Join 8,400+ conscious fashion lovers trading verified vintage pieces every day.</p>
             <div className="cta-actions">
-              <a href="/login" className="btn-cta-light" id="cta-start-btn">
+              <a href="/profile/become-seller" className="btn-cta-light" id="cta-start-btn">
                 <span className="material-symbols-outlined" style={{ fontSize: 18 }}>storefront</span>
                 Start Selling Today
               </a>
-              <a href="#drops" className="btn-outline-light" id="cta-browse-btn">Browse Drops</a>
+              <a href="/shop" className="btn-outline-light" id="cta-browse-btn">Browse Drops</a>
             </div>
           </div>
           <div className="cta-decoration" aria-hidden="true">

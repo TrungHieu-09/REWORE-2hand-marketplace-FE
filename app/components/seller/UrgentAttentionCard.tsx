@@ -34,7 +34,7 @@ const alerts = [
     buyerTag: "Buyer: @marcus_v",
     meta: "Reserved for ₫4,500,000",
     action: "Contact Buyer",
-    actionHref: "#",
+    actionHref: "/seller/orders",
     actionIcon: "chat",
   },
 ];

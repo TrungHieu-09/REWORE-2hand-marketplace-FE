@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Navbar from "../../../components/Navbar";
 import { useSeller } from "../../../context/SellerContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -518,66 +517,63 @@ export default function VerifyPage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-[#fff8f5] pt-24 pb-20">
-        {/* Breadcrumb */}
-        <div className="max-w-[1280px] mx-auto px-5 md:px-12 mb-8">
-          <nav className="flex items-center gap-2 text-[13px] text-[#88726c]">
-            <Link href="/profile" className="hover:text-[#974226] transition-colors font-medium">Profile</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <Link href="/profile/become-seller" className="hover:text-[#974226] transition-colors font-medium">Become a Seller</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-[#231a11] font-semibold">{stepLabels[step]}</span>
-          </nav>
-        </div>
-
-        <main className="max-w-[800px] mx-auto px-5 md:px-12">
-          <div className="bg-white rounded-[24px] shadow-[0_12px_48px_-8px_rgba(43,33,24,0.09)] border border-[#dbc1b9]/30 overflow-hidden opacity-0 animate-fade-in-up">
-
-            {/* Step header + progress inside card */}
-            <div className="px-8 md:px-12 lg:px-14 pt-8 md:pt-10">
-              <StepHeader step={step} label={stepLabels[step]} />
-            </div>
-
-            {/* Form content */}
-            <div className="px-8 md:px-12 lg:px-14 pb-2">
-              {step === 1 && <Step1Form data={step1} onChange={setStep1} errors={s1Errors} />}
-              {step === 2 && <Step2Form data={step2} onChange={setStep2} errors={s2Errors} />}
-              {step === 3 && (
-                <Step3Review
-                  step1={step1} step2={step2}
-                  checks={checks}
-                  onCheckChange={(i, v) => {
-                    const next = [...checks] as [boolean, boolean, boolean];
-                    next[i] = v;
-                    setChecks(next);
-                  }}
-                  onGoTo={(s) => setStep(s)}
-                  errors={s3Errors}
-                />
-              )}
-            </div>
-
-            {/* Footer nav */}
-            <div className="flex items-center justify-between px-8 md:px-12 lg:px-14 py-6 mt-4 border-t border-[#f2dfd1]">
-              <button
-                onClick={handleBack}
-                className="flex items-center gap-2 text-[13px] font-semibold text-[#655d52] hover:text-[#974226] transition-colors group"
-              >
-                <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
-                Back
-              </button>
-              <button
-                onClick={handleContinue}
-                className="px-8 py-3 rounded-lg bg-[#974226] text-white text-[13px] font-semibold tracking-wide hover:bg-[#b65a3c] active:scale-[0.97] transition-all shadow-sm"
-              >
-                {step === 3 ? "Submit for Review" : "Continue"}
-              </button>
-            </div>
-          </div>
-        </main>
+    <div className="min-h-screen bg-[#f7f4f0] pt-6 pb-20">
+      {/* Breadcrumb */}
+      <div className="max-w-[1280px] mx-auto px-5 md:px-12 mb-8">
+        <nav className="flex items-center gap-2 text-[13px] text-[#88726c]">
+          <Link href="/profile" className="hover:text-[#974226] transition-colors font-medium">Profile</Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <Link href="/profile/become-seller" className="hover:text-[#974226] transition-colors font-medium">Become a Seller</Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span className="text-[#231a11] font-semibold">{stepLabels[step]}</span>
+        </nav>
       </div>
-    </>
+
+      <main className="max-w-[800px] mx-auto px-5 md:px-12">
+        <div className="bg-white rounded-[24px] shadow-[0_12px_48px_-8px_rgba(43,33,24,0.09)] border border-[#dbc1b9]/30 overflow-hidden opacity-0 animate-fade-in-up">
+
+          {/* Step header + progress inside card */}
+          <div className="px-8 md:px-12 lg:px-14 pt-8 md:pt-10">
+            <StepHeader step={step} label={stepLabels[step]} />
+          </div>
+
+          {/* Form content */}
+          <div className="px-8 md:px-12 lg:px-14 pb-2">
+            {step === 1 && <Step1Form data={step1} onChange={setStep1} errors={s1Errors} />}
+            {step === 2 && <Step2Form data={step2} onChange={setStep2} errors={s2Errors} />}
+            {step === 3 && (
+              <Step3Review
+                step1={step1} step2={step2}
+                checks={checks}
+                onCheckChange={(i, v) => {
+                  const next = [...checks] as [boolean, boolean, boolean];
+                  next[i] = v;
+                  setChecks(next);
+                }}
+                onGoTo={(s) => setStep(s)}
+                errors={s3Errors}
+              />
+            )}
+          </div>
+
+          {/* Footer nav */}
+          <div className="flex items-center justify-between px-8 md:px-12 lg:px-14 py-6 mt-4 border-t border-[#f2dfd1]">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-[13px] font-semibold text-[#655d52] hover:text-[#974226] transition-colors group"
+            >
+              <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+              Back
+            </button>
+            <button
+              onClick={handleContinue}
+              className="px-8 py-3 rounded-lg bg-[#974226] text-white text-[13px] font-semibold tracking-wide hover:bg-[#b65a3c] active:scale-[0.97] transition-all shadow-sm"
+            >
+              {step === 3 ? "Submit for Review" : "Continue"}
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }

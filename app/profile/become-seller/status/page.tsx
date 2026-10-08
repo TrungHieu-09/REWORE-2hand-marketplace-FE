@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Navbar from "../../../components/Navbar";
 import { useSeller } from "../../../context/SellerContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -269,50 +268,47 @@ export default function StatusPage() {
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-[#fff8f5] pt-24 pb-20 flex flex-col">
-        {/* Breadcrumb */}
-        <div className="max-w-[1280px] mx-auto px-5 md:px-12 mb-8 w-full">
-          <nav className="flex items-center gap-2 text-[13px] text-[#88726c]">
-            <Link href="/profile" className="hover:text-[#974226] transition-colors font-medium">Profile</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <Link href="/profile/become-seller" className="hover:text-[#974226] transition-colors font-medium">Become a Seller</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-[#231a11] font-semibold">
-              {statusTitle[verificationStatus] ?? "Status"}
-            </span>
-          </nav>
-        </div>
-
-        <main className="flex-1 flex items-center justify-center px-5">
-          <div className="w-full max-w-[560px] bg-white rounded-[24px] shadow-[0_12px_48px_-8px_rgba(43,33,24,0.09)] border border-[#dbc1b9]/30 p-8 md:p-12 opacity-0 animate-fade-in-up relative overflow-hidden">
-            {/* Decorative blobs */}
-            <div className="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-[#ffdbd0]/20 pointer-events-none" />
-            <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-[#f2dfd1]/20 pointer-events-none" />
-
-            <div className="relative z-10">
-              {verificationStatus === "pending" && (
-                <PendingState
-                  onSimulateApproval={simulateApproval}
-                  onSimulateRejection={() =>
-                    simulateRejection("Your ID photo was unclear or information did not match our records.")
-                  }
-                />
-              )}
-              {verificationStatus === "approved" && (
-                <ApprovedState score={sellerScore} />
-              )}
-              {verificationStatus === "rejected" && (
-                <RejectedState
-                  reason={rejectionReason ?? "Verification failed. Please try again."}
-                  onResubmit={handleResubmit}
-                />
-              )}
-            </div>
-          </div>
-        </main>
+    <div className="min-h-screen bg-[#f7f4f0] pt-6 pb-20 flex flex-col">
+      {/* Breadcrumb */}
+      <div className="max-w-[1280px] mx-auto px-5 md:px-12 mb-8 w-full">
+        <nav className="flex items-center gap-2 text-[13px] text-[#88726c]">
+          <Link href="/profile" className="hover:text-[#974226] transition-colors font-medium">Profile</Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <Link href="/profile/become-seller" className="hover:text-[#974226] transition-colors font-medium">Become a Seller</Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span className="text-[#231a11] font-semibold">
+            {statusTitle[verificationStatus] ?? "Status"}
+          </span>
+        </nav>
       </div>
-    </>
+
+      <main className="flex-1 flex items-center justify-center px-5">
+        <div className="w-full max-w-[560px] bg-white rounded-[24px] shadow-[0_12px_48px_-8px_rgba(43,33,24,0.09)] border border-[#dbc1b9]/30 p-8 md:p-12 opacity-0 animate-fade-in-up relative overflow-hidden">
+          {/* Decorative blobs */}
+          <div className="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-[#ffdbd0]/20 pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full bg-[#f2dfd1]/20 pointer-events-none" />
+
+          <div className="relative z-10">
+            {verificationStatus === "pending" && (
+              <PendingState
+                onSimulateApproval={simulateApproval}
+                onSimulateRejection={() =>
+                  simulateRejection("Your ID photo was unclear or information did not match our records.")
+                }
+              />
+            )}
+            {verificationStatus === "approved" && (
+              <ApprovedState score={sellerScore} />
+            )}
+            {verificationStatus === "rejected" && (
+              <RejectedState
+                reason={rejectionReason ?? "Verification failed. Please try again."}
+                onResubmit={handleResubmit}
+              />
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }

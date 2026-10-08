@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function SellerAnalyticsPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -7,11 +9,21 @@ export default function SellerAnalyticsPage() {
       <h1 className="text-[28px] font-semibold text-[#231a11] mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
         Analytics
       </h1>
-      <p className="text-[15px] text-[#55433d]">Track your store performance, views, and conversion rates.</p>
-      <span className="mt-4 inline-flex items-center gap-2 text-[12px] text-[#88726c] bg-[#f2dfd1]/40 border border-[#dbc1b9]/30 rounded-full px-4 py-2">
-        <span className="material-symbols-outlined text-[16px]">construction</span>
-        Coming soon — connect to API
-      </span>
+      <p className="text-[15px] text-[#55433d] mb-6">Track your store performance, views, and conversion rates.</p>
+      <div className="flex items-center gap-3">
+        <Link
+          href="/seller/dashboard"
+          className="px-6 py-2.5 rounded-xl bg-[#974226] text-white text-sm font-semibold hover:bg-[#b65a3c] transition-all shadow-sm"
+        >
+          View Dashboard KPIs
+        </Link>
+        <Link
+          href="/seller/reports"
+          className="px-6 py-2.5 rounded-xl border border-[#dbc1b9] text-[#231a11] text-sm font-semibold hover:bg-[#feeadc] transition-all"
+        >
+          Monthly Reports
+        </Link>
+      </div>
     </div>
   );
 }

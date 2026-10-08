@@ -23,7 +23,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/auth/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -149,7 +149,13 @@ export default function LoginPage() {
                 <input type="checkbox" className="auth-checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 <span>Remember me</span>
               </label>
-              <a href="#" className="auth-forgot">Forgot password?</a>
+              <button
+                type="button"
+                onClick={() => alert("Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn! Vui lòng kiểm tra hộp thư đến.")}
+                className="auth-forgot cursor-pointer bg-transparent border-none p-0 text-inherit"
+              >
+                Forgot password?
+              </button>
             </div>
 
             {/* Error */}

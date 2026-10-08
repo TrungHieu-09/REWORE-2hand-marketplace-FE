@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useCountdown } from "@/app/hooks/useAnimations";
 
@@ -38,15 +39,14 @@ interface ProductProps {
 }
 
 function ProductCard({ id, era, hot, src, alt, tags, name, meta, price, original, rating }: ProductProps) {
-  const [quickLabel, setQuickLabel] = useState("Quick View");
   return (
     <article className="product-card animate-in" id={id}>
       <div className="product-img-wrap">
         <Image src={src} alt={alt} fill className="product-img" style={{ objectFit: "cover" }} sizes="(max-width:768px) 100vw, 25vw" />
         <div className="product-overlay">
-          <button className="btn-quick-view" id={`quick-${id}`} onClick={() => { setQuickLabel("Opening…"); setTimeout(() => setQuickLabel("Quick View"), 1500); }}>
-            {quickLabel}
-          </button>
+          <Link href="/shop" className="btn-quick-view" id={`quick-${id}`}>
+            Quick View
+          </Link>
         </div>
         <div className="product-badge-era">{era}</div>
         {hot && <span className="product-badge-hot">🔥 Hot</span>}
@@ -56,7 +56,9 @@ function ProductCard({ id, era, hot, src, alt, tags, name, meta, price, original
         <div className="product-tags">
           {tags.map((t) => <span key={t.label} className={`tag ${t.cls}`}>{t.label}</span>)}
         </div>
-        <h3 className="product-name">{name}</h3>
+        <h3 className="product-name">
+          <Link href="/shop" className="hover:text-[#974226] transition-colors">{name}</Link>
+        </h3>
         <p className="product-meta">{meta}</p>
         <div className="product-footer">
           <div>
@@ -77,27 +79,23 @@ function ProductCard({ id, era, hot, src, alt, tags, name, meta, price, original
 function AuctionCard() {
   const timer = useCountdown(2 * 3600000 + 14 * 60000 + 37000);
   const [bid, setBid] = useState(2100000);
-  const [label, setLabel] = useState("Place Bid");
-  const handleBid = () => {
-    setBid((v) => v + 50000);
-    setLabel("Bid placed! ✓");
-    setTimeout(() => setLabel("Place Bid"), 2000);
-  };
   return (
     <article className="product-card auction-card animate-in" id="product-auction">
-      <div className="product-img-wrap auction-img-wrap">
+      <Link href="/auctions/live" className="product-img-wrap auction-img-wrap block cursor-pointer">
         <div className="auction-placeholder">
           <span className="material-symbols-outlined" style={{ fontSize: 48, color: "#88726c" }}>gavel</span>
           <p style={{ color: "#55433d", fontFamily: "var(--font-manrope)", fontSize: 14, marginTop: 8 }}>Live Auction</p>
         </div>
         <div className="auction-live-badge"><span className="live-dot" />LIVE</div>
-      </div>
+      </Link>
       <div className="product-info">
         <div className="product-tags">
           <span className="tag tag-terracotta">Auction</span>
           <span className="tag tag-olive">Rare Find</span>
         </div>
-        <h3 className="product-name">Silk Scarf — Signed Piece</h3>
+        <h3 className="product-name">
+          <Link href="/auctions/live" className="hover:text-[#974226] transition-colors">Silk Scarf — Signed Piece</Link>
+        </h3>
         <p className="product-meta">One Size · Mint Condition</p>
         <div className="auction-timer">
           <span className="material-symbols-outlined" style={{ fontSize: 14 }}>timer</span>
@@ -109,9 +107,9 @@ function AuctionCard() {
             <br />
             <span className="product-price">₫ {bid.toLocaleString("vi-VN")}</span>
           </div>
-          <button className="btn-bid" onClick={handleBid} style={label !== "Place Bid" ? { background: "#556138" } : undefined}>
-            {label}
-          </button>
+          <Link href="/auctions/live" className="btn-bid text-center flex items-center justify-center">
+            Place Bid
+          </Link>
         </div>
       </div>
     </article>
@@ -128,9 +126,9 @@ export default function FeaturedDrops() {
             <p className="section-eyebrow">Latest Drops</p>
             <h2 className="section-title" style={{ textAlign: "left", marginBottom: 0 }}>Featured Pieces</h2>
           </div>
-          <a href="#" className="btn-outline-sm">
+          <Link href="/shop" className="btn-outline-sm">
             View all drops <span className="material-symbols-outlined" style={{ fontSize: 14, verticalAlign: "middle" }}>arrow_forward</span>
-          </a>
+          </Link>
         </div>
         <div className="products-grid">
           <ProductCard id="product-blazer" era="90s" src="/product1.png" alt="Vintage beige linen blazer"

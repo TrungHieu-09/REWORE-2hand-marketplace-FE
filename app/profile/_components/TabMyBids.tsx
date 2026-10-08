@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ACTIVE_BIDS } from "../../auctions/_data/mock-auctions";
 
 function formatVND(amount: number) {
@@ -68,13 +69,19 @@ export default function TabMyBids() {
 
               <div className="flex flex-col justify-end sm:min-w-[140px]">
                 {isWinning ? (
-                  <button className="w-full py-2.5 bg-[#f2dfd1] text-[#55443d] rounded-xl text-xs font-semibold hover:bg-[#e9d7c8] transition-colors">
+                  <Link
+                    href="/auctions/live"
+                    className="block text-center w-full py-2.5 bg-[#f2dfd1] text-[#55443d] rounded-xl text-xs font-semibold hover:bg-[#e9d7c8] transition-colors"
+                  >
                     View Auction
-                  </button>
+                  </Link>
                 ) : (
-                  <button className="w-full py-2.5 bg-[#b65a3c] text-white rounded-xl text-xs font-semibold shadow-md shadow-[#b65a3c]/30 hover:bg-[#974226] hover:-translate-y-0.5 transition-all">
+                  <Link
+                    href="/auctions/live"
+                    className="block text-center w-full py-2.5 bg-[#b65a3c] text-white rounded-xl text-xs font-semibold shadow-md shadow-[#b65a3c]/30 hover:bg-[#974226] hover:-translate-y-0.5 transition-all"
+                  >
                     Increase Bid
-                  </button>
+                  </Link>
                 )}
               </div>
             </div>

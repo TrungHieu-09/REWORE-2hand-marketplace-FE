@@ -18,7 +18,7 @@ export default function Hero() {
           Discover curated one-of-one vintage pieces and trade with confidence in our trust-based community.
         </p>
         <div className="hero-actions">
-          <a href="#drops" className="btn-cta" id="hero-explore-btn">
+          <a href="/shop" className="btn-cta" id="hero-explore-btn">
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>explore</span>
             Explore Drops
           </a>

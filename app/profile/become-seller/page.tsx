@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Navbar from "../../components/Navbar";
 
 const STEPS = [
   {
@@ -57,9 +56,7 @@ export default function BecomeSeller() {
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-[#fff8f5] pt-24 pb-20">
+    <div className="min-h-screen bg-[#f7f4f0] pt-6 pb-20">
         {/* Breadcrumb */}
         <div className="max-w-[1280px] mx-auto px-5 md:px-12 mb-8">
           <nav className="flex items-center gap-2 text-[13px] text-[#88726c]">
@@ -241,6 +238,5 @@ export default function BecomeSeller() {
           </div>
         </main>
       </div>
-    </>
   );
 }

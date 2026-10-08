@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
 import type { Auction } from "../_data/mock-auctions";
 import LiveBadge from "./LiveBadge";
 import CountdownTimer from "./CountdownTimer";
@@ -24,7 +27,7 @@ export default function FeaturedAuctionCard({
       "
     >
       {/* Image */}
-      <div className="relative w-full md:w-1/2 h-64 md:h-auto overflow-hidden">
+      <Link href="/auctions/live" className="relative w-full md:w-1/2 h-64 md:h-auto overflow-hidden block">
         <Image
           src={auction.imageUrl}
           alt={auction.imageAlt}
@@ -45,7 +48,7 @@ export default function FeaturedAuctionCard({
           <span className="material-symbols-outlined text-[13px]">visibility</span>
           {auction.watcherCount} watching
         </div>
-      </div>
+      </Link>
 
       {/* Content */}
       <div className="p-6 md:p-7 w-full md:w-1/2 flex flex-col justify-between">
@@ -60,7 +63,9 @@ export default function FeaturedAuctionCard({
             className="font-[family-name:var(--font-playfair)] text-[22px] md:text-[26px] font-semibold text-[#231a11] leading-tight mb-3
               group-hover:text-[#974226] transition-colors duration-300"
           >
-            {auction.title}
+            <Link href="/auctions/live">
+              {auction.title}
+            </Link>
           </h3>
 
           {/* Current bid */}
@@ -83,9 +88,10 @@ export default function FeaturedAuctionCard({
           </div>
 
           {/* CTA */}
-          <button
+          <Link
+            href="/auctions/live"
             className="
-              w-full py-3.5 bg-[#b65a3c] text-white rounded-xl
+              block text-center w-full py-3.5 bg-[#b65a3c] text-white rounded-xl
               font-semibold text-sm tracking-wide
               hover:bg-[#974226] active:scale-[0.98]
               transition-all duration-200
@@ -93,7 +99,7 @@ export default function FeaturedAuctionCard({
             "
           >
             Join Auction
-          </button>
+          </Link>
         </div>
       </div>
     </article>

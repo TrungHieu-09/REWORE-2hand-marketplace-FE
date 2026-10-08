@@ -83,12 +83,18 @@ export default function SellerDashboardPage() {
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-3">
-          <button className="px-5 py-2.5 rounded-full bg-white text-[#231a11] text-[13px] font-bold border border-[#dbc1b9] hover:bg-[#feeadc] transition-all">
+          <Link
+            href="/seller/reports"
+            className="px-5 py-2.5 rounded-full bg-white text-[#231a11] text-[13px] font-bold border border-[#dbc1b9] hover:bg-[#feeadc] transition-all"
+          >
             Review Guidelines
-          </button>
-          <button className="px-5 py-2.5 rounded-full bg-[#974226] text-white text-[13px] font-bold hover:bg-[#b65a3c] transition-all shadow-sm">
+          </Link>
+          <Link
+            href="/seller/inventory/new"
+            className="px-5 py-2.5 rounded-full bg-[#974226] text-white text-[13px] font-bold hover:bg-[#b65a3c] transition-all shadow-sm"
+          >
             Schedule Items
-          </button>
+          </Link>
         </div>
       </section>
 
@@ -99,8 +105,15 @@ export default function SellerDashboardPage() {
           <span>— Curated Circular Luxury Platform</span>
         </div>
         <div className="flex items-center gap-6">
-          {["Seller Policies", "Fee Schedule", "Authenticity Standards", "Support Concierge"].map((l) => (
-            <a key={l} href="#" className="hover:text-[#974226] transition-colors">{l}</a>
+          {[
+            { label: "Seller Policies", href: "/seller/reports" },
+            { label: "Fee Schedule", href: "/seller/reports" },
+            { label: "Authenticity Standards", href: "/seller/reports" },
+            { label: "Support Concierge", href: "mailto:seller-support@rewore.com" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} className="hover:text-[#974226] transition-colors">
+              {item.label}
+            </Link>
           ))}
         </div>
       </footer>

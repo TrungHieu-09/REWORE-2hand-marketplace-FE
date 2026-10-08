@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import Link from "next/link";
 import type { Auction } from "../_data/mock-auctions";
 import LiveBadge from "./LiveBadge";
 import CountdownTimer from "./CountdownTimer";
@@ -17,9 +20,9 @@ export default function AuctionGridCard({ auction }: AuctionGridCardProps) {
     auction.status === "starts_soon" || auction.status === "starts_tomorrow";
 
   return (
-    <article className="group cursor-pointer flex flex-col p-3 -m-3 rounded-2xl transition-all duration-300 hover:bg-white hover:shadow-[0_12px_32px_-8px_rgba(43,33,24,0.12)] hover:-translate-y-1">
+    <article className="group flex flex-col p-3 -m-3 rounded-2xl transition-all duration-300 hover:bg-white hover:shadow-[0_12px_32px_-8px_rgba(43,33,24,0.12)] hover:-translate-y-1">
       {/* Image container */}
-      <div className="relative w-full aspect-[4/5] rounded-[20px] overflow-hidden mb-4 bg-[#feeadc]">
+      <Link href="/auctions/live" className="relative w-full aspect-[4/5] rounded-[20px] overflow-hidden mb-4 bg-[#feeadc] block">
         <Image
           src={auction.imageUrl}
           alt={auction.imageAlt}
@@ -57,7 +60,7 @@ export default function AuctionGridCard({ auction }: AuctionGridCardProps) {
           </span>
           {auction.watcherCount}
         </div>
-      </div>
+      </Link>
 
       {/* Metadata */}
       <div className="flex justify-between items-center mb-1">
@@ -68,7 +71,9 @@ export default function AuctionGridCard({ auction }: AuctionGridCardProps) {
 
       {/* Title */}
       <h3 className="font-[family-name:var(--font-manrope)] font-semibold text-[15px] text-[#231a11] mb-1 line-clamp-1 group-hover:text-[#974226] transition-colors duration-200">
-        {auction.title}
+        <Link href="/auctions/live">
+          {auction.title}
+        </Link>
       </h3>
 
       {/* Price */}
@@ -79,22 +84,24 @@ export default function AuctionGridCard({ auction }: AuctionGridCardProps) {
 
       {/* CTA */}
       {isLive ? (
-        <button
+        <Link
+          href="/auctions/live"
           className="
-            w-full py-2.5 bg-[#b65a3c] text-white rounded-xl
+            block text-center w-full py-2.5 bg-[#b65a3c] text-white rounded-xl
             text-xs font-semibold tracking-wide
             hover:bg-[#974226] active:scale-[0.98] transition-all duration-200
             shadow-sm shadow-[#b65a3c]/20 hover:shadow-md hover:shadow-[#974226]/25
           "
         >
           Join Auction
-        </button>
+        </Link>
       ) : (
         <button
+          onClick={() => alert(`Đã đặt nhắc nhở cho "${auction.title}"!`)}
           className="
             w-full py-2.5 border-2 border-[#b65a3c] text-[#b65a3c] rounded-xl
             text-xs font-semibold tracking-wide
-            group-hover:bg-[#b65a3c] group-hover:text-white
+            hover:bg-[#b65a3c] hover:text-white
             active:scale-[0.98] transition-all duration-200
           "
         >

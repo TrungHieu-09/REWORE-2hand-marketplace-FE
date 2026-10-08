@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-export default function ProfileHeader() {
+interface ProfileHeaderProps {
+  onEditProfile?: () => void;
+}
+
+export default function ProfileHeader({ onEditProfile }: ProfileHeaderProps) {
   const [scoreVisible, setScoreVisible] = useState(false);
   const BUYER_SCORE = 86;
 
@@ -49,7 +53,10 @@ export default function ProfileHeader() {
         <p className="text-[#55443d] text-[15px] mb-4">
           @elenarossi · Member since October 2021
         </p>
-        <button className="font-semibold text-[13px] tracking-wide px-6 py-2 rounded-full border border-[#974226] text-[#974226] hover:bg-[#974226] hover:text-white transition-colors duration-300">
+        <button
+          onClick={onEditProfile}
+          className="font-semibold text-[13px] tracking-wide px-6 py-2 rounded-full border border-[#974226] text-[#974226] hover:bg-[#974226] hover:text-white transition-colors duration-300"
+        >
           Edit Profile
         </button>
       </div>

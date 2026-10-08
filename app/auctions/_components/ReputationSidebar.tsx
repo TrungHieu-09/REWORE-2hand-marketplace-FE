@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { ActiveBid } from "../_data/mock-auctions";
 import { ACTIVE_BIDS } from "../_data/mock-auctions";
 
@@ -75,9 +76,9 @@ export default function ReputationSidebar() {
           <h3 className="font-[family-name:var(--font-playfair)] text-base font-semibold text-[#231a11]">
             My Active Bids
           </h3>
-          <button className="text-[#974226] text-xs font-semibold hover:underline tracking-wide">
+          <Link href="/profile" className="text-[#974226] text-xs font-semibold hover:underline tracking-wide">
             View All
-          </button>
+          </Link>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -86,15 +87,16 @@ export default function ReputationSidebar() {
           ))}
         </div>
 
-        <button
+        <Link
+          href="/profile"
           className="
-            w-full mt-5 py-2.5 border border-[#88726c] text-[#231a11]
+            block text-center w-full mt-5 py-2.5 border border-[#88726c] text-[#231a11]
             rounded-xl text-xs font-semibold tracking-wide
             hover:bg-[#f2dfd1] transition-colors duration-200
           "
         >
           Manage Bids
-        </button>
+        </Link>
       </div>
     </aside>
   );
@@ -110,7 +112,7 @@ function BidItem({
   const isWinning = bid.status === "winning";
   return (
     <>
-      <div className="flex gap-3 group cursor-pointer">
+      <Link href="/auctions/live" className="flex gap-3 group cursor-pointer">
         <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#feeadc]">
           <Image
             src={bid.imageUrl}
@@ -147,7 +149,7 @@ function BidItem({
             </p>
           )}
         </div>
-      </div>
+      </Link>
       {showDivider && <div className="h-px bg-[#f2dfd1]" />}
     </>
   );
