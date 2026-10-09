@@ -16,8 +16,9 @@ export function AdminShell({
   openReports?: number;
 }) {
   const router = useRouter();
-  const { isLoggedIn, isLoading, user } = useAuth();
+  const { isLoggedIn, isLoading, logout, user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
+  const adminInitial = user?.name?.trim().charAt(0).toUpperCase() || "A";
 
   useEffect(() => {
     if (isLoading) return;
@@ -38,7 +39,7 @@ export function AdminShell({
             <Link href="/" className="brand">REWORE</Link>
             <div className="admin-top-user">
               <span className="admin-role-pill">Admin</span>
-              <div className="admin-avatar">A</div>
+              <div className="admin-avatar">{adminInitial}</div>
             </div>
           </div>
         </nav>
@@ -60,7 +61,11 @@ export function AdminShell({
           </div>
           <div className="admin-top-user">
             <span className="admin-role-pill">Admin</span>
-            <div className="admin-avatar">A</div>
+            <div className="admin-avatar">{adminInitial}</div>
+            <button type="button" className="admin-logout-btn" onClick={logout}>
+              <span className="material-symbols-outlined">logout</span>
+              Log out
+            </button>
           </div>
         </div>
       </nav>

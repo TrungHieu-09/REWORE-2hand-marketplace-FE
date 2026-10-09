@@ -7,7 +7,7 @@ import { DataTable, type DataColumn } from "../../components/admin/DataTable";
 import { PillButton } from "../../components/admin/PillButton";
 import { orderStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
 import { useAdminBadges } from "../../components/admin/useAdminBadges";
-import { ApiError, adminApi, sellerDisplayName, type Order } from "../../lib/api";
+import { ApiError, adminApi, apiAssetUrl, sellerDisplayName, type Order } from "../../lib/api";
 import { formatShortDate, formatVnd, normalizedStatusLabel } from "../_utils";
 
 export default function AdminOrdersPage() {
@@ -68,6 +68,13 @@ export default function AdminOrdersPage() {
           <div>
             <p className="font-semibold text-[#231a11]">{order.product?.title ?? "Auction order"}</p>
             <p className="text-[12px] text-[#88726c]">{order.product?.category ?? "Marketplace"}</p>
+            {order.qrCodeRef ? (
+              <a href={apiAssetUrl(order.qrCodeRef)} target="_blank" rel="noreferrer" className="text-[12px] font-semibold text-[#974226] hover:underline">
+                Xem bill chuyển khoản
+              </a>
+            ) : (
+              <p className="text-[12px] text-[#ba1a1a]">Chưa có bill</p>
+            )}
           </div>
         ),
       },

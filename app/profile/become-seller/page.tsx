@@ -43,7 +43,7 @@ const PERKS = [
     icon: "gavel",
     title: "Host Live Auctions",
     description:
-      "Unlock live auction hosting as your trust score grows.",
+      "Unlock live auction hosting with the Premium seller package.",
   },
   {
     icon: "verified",
@@ -100,8 +100,8 @@ export default function BecomeSeller() {
             </h1>
             <p className="text-[16px] text-[#55433d] leading-relaxed max-w-xl mx-auto mb-10 relative z-10">
               Sellers on REWORE can list unique items, participate in curated
-              drops, and unlock the power of live auctions as their trust score
-              grows.
+              drops, and unlock the power of live auctions with the Premium
+              seller package.
             </p>
 
             {/* ── Steps ── */}

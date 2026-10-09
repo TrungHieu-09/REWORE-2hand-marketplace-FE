@@ -7,7 +7,7 @@ import { EmptyState, LoadingSkeleton } from "../../components/admin/AdminStates"
 import { DetailDrawer } from "../../components/admin/DetailDrawer";
 import { PillButton } from "../../components/admin/PillButton";
 import { sellerStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
-import { adminApi, type SellerApplication, type SellerApplicationStatus } from "../../lib/api";
+import { adminApi, type SellerApplication, type SellerApplicationStatus, type SellerSubscriptionPlan } from "../../lib/api";
 import { formatShortDate, initials, normalizedStatusLabel } from "../_utils";
 
 type SellerTab = "ALL" | SellerApplicationStatus;
@@ -18,6 +18,15 @@ const TABS: { key: SellerTab; label: string }[] = [
   { key: "APPROVED", label: "Đã duyệt" },
   { key: "REJECTED", label: "Từ chối" },
 ];
+
+const planExpiresText = (value?: string | null) =>
+  value ? new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value)) : "Không giới hạn";
+
+const addDaysIso = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+};
 
 export default function AdminSellersPage() {
   const [tab, setTab] = useState<SellerTab>("PENDING");
@@ -30,6 +39,7 @@ export default function AdminSellersPage() {
   const [actionMessage, setActionMessage] = useState("");
   const [pageMessage, setPageMessage] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [subscriptionBusy, setSubscriptionBusy] = useState("");
   const [detailLoadingId, setDetailLoadingId] = useState("");
   const [apiMessage, setApiMessage] = useState("");
 
@@ -167,6 +177,25 @@ export default function AdminSellersPage() {
     }
   };
 
+  const updateSubscription = async (application: SellerApplication, plan: SellerSubscriptionPlan) => {
+    setSubscriptionBusy(`${application.id}:${plan}`);
+    setActionMessage("");
+    try {
+      const res = await adminApi.updateSellerSubscription(application.id, {
+        plan,
+        expiresAt: plan === "PREMIUM" ? addDaysIso(30) : null,
+        note: plan === "PREMIUM" ? "Premium package activated manually by admin" : "Seller subscription downgraded to Free",
+      });
+      setSelected(res.data);
+      setApplications((items) => items.map((item) => (item.id === res.data.id ? { ...item, ...res.data } : item)));
+      setActionMessage(plan === "PREMIUM" ? "Đã bật Premium 30 ngày cho seller." : "Đã chuyển seller về gói Free.");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Không thể cập nhật gói seller.");
+    } finally {
+      setSubscriptionBusy("");
+    }
+  };
+
   return (
     <AdminShell pendingSellers={pendingSellers} openReports={openReports}>
       <header className="admin-page-head">
@@ -257,6 +286,14 @@ export default function AdminSellersPage() {
                 <span className="admin-detail-label">Account number</span>
                 <span className="admin-detail-value">{selected.bankAccountNumber}</span>
               </div>
+              <div className="admin-detail-box">
+                <span className="admin-detail-label">Seller plan</span>
+                <span className="admin-detail-value">{selected.subscriptionPlan ?? "FREE"}</span>
+              </div>
+              <div className="admin-detail-box">
+                <span className="admin-detail-label">Plan expires</span>
+                <span className="admin-detail-value">{planExpiresText(selected.subscriptionExpiresAt)}</span>
+              </div>
             </div>
 
             <div className="flex items-center justify-between gap-3">
@@ -296,6 +333,30 @@ export default function AdminSellersPage() {
             )}
 
             {actionMessage && <p className="sp-foryou-sub">{actionMessage}</p>}
+
+            {selected.status === "APPROVED" && (
+              <div className="admin-detail-box">
+                <span className="admin-detail-label">Gói seller</span>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  <PillButton
+                    tone="green"
+                    disabled={Boolean(subscriptionBusy) || selected.subscriptionPlan === "PREMIUM"}
+                    onClick={() => updateSubscription(selected, "PREMIUM")}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">workspace_premium</span>
+                    Bật Premium 30 ngày
+                  </PillButton>
+                  <PillButton
+                    tone="muted"
+                    disabled={Boolean(subscriptionBusy) || selected.subscriptionPlan === "FREE" || !selected.subscriptionPlan}
+                    onClick={() => updateSubscription(selected, "FREE")}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                    Chuyển về Free
+                  </PillButton>
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-3">
               <PillButton

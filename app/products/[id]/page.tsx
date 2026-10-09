@@ -6,12 +6,14 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { LoadingSkeleton } from "../../components/admin/AdminStates";
 import { PillButton } from "../../components/admin/PillButton";
-import { productStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
+import { availabilityStatusTone, productStatusTone, StatusBadge } from "../../components/admin/StatusBadge";
 import Navbar from "../../components/Navbar";
 import { useAuth } from "../../context/AuthContext";
 import {
   ApiError,
   apiAssetUrl,
+  cartApi,
+  ordersApi,
   productsApi,
   sellerDisplayName,
   wishlistApi,
@@ -27,6 +29,13 @@ const CONDITION_LABEL: Record<ProductCondition, string> = {
   POOR: "Cũ",
 };
 
+const AVAILABILITY_LABEL: Record<string, string> = {
+  available: "CÒN HÀNG",
+  upcoming_drop: "SẮP DROP",
+  held: "ĐANG GIỮ",
+  sold: "HẾT HÀNG",
+};
+
 function formatVnd(amount: number) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -39,11 +48,13 @@ function ProductImage({
   src,
   alt,
   className,
+  loading,
   sizes,
 }: {
   src: string;
   alt: string;
   className?: string;
+  loading?: "eager" | "lazy";
   sizes: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -64,6 +75,7 @@ function ProductImage({
       alt={alt}
       fill
       className={className}
+      loading={loading}
       sizes={sizes}
       onError={() => setFailed(true)}
     />
@@ -81,6 +93,11 @@ export default function ProductDetailPage() {
   const [message, setMessage] = useState("");
   const [wishlistOn, setWishlistOn] = useState(false);
   const [wishlistBusy, setWishlistBusy] = useState(false);
+  const [cartOn, setCartOn] = useState(false);
+  const [cartBusy, setCartBusy] = useState(false);
+  const [orderBusy, setOrderBusy] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [orderNote, setOrderNote] = useState("");
 
   useEffect(() => {
     if (!productId) return;
@@ -96,6 +113,16 @@ export default function ProductDetailPage() {
           if (!cancelled) {
             setProduct(res.data);
             setActiveImage(0);
+            if (isLoggedIn) {
+              Promise.allSettled([
+                cartApi.check(res.data.id),
+                wishlistApi.check(res.data.id),
+              ]).then(([cartResult, wishlistResult]) => {
+                if (cancelled) return;
+                if (cartResult.status === "fulfilled") setCartOn(cartResult.value.isInCart);
+                if (wishlistResult.status === "fulfilled") setWishlistOn(wishlistResult.value.isInWishlist);
+              });
+            }
           }
         })
         .catch((err) => {
@@ -110,12 +137,12 @@ export default function ProductDetailPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [productId]);
+  }, [isLoggedIn, productId]);
 
   const images = useMemo(() => product?.images ?? [], [product?.images]);
   const mainImage = images[activeImage] ?? images[0] ?? "";
   const sellerName = sellerDisplayName(product?.seller);
-  const canBuy = product?.status === "ACTIVE" && product?.availabilityStatus !== "sold";
+  const canBuy = product?.status === "ACTIVE" && product?.availabilityStatus === "available";
 
   const toggleWishlist = async () => {
     if (!product) return;
@@ -141,6 +168,59 @@ export default function ProductDetailPage() {
       setMessage(err instanceof ApiError ? err.message : "Không cập nhật được wishlist.");
     } finally {
       setWishlistBusy(false);
+    }
+  };
+
+  const addToCart = async () => {
+    if (!product) return;
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+
+    setCartBusy(true);
+    setMessage("");
+    try {
+      await cartApi.add(product.id);
+      setCartOn(true);
+      setMessage("Đã thêm vào giỏ hàng. Lưu ý: giỏ hàng không giữ hàng, ai mua trước thì sản phẩm sẽ hết hàng.");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409 && err.message.includes("đã có")) {
+        setCartOn(true);
+        setMessage("Sản phẩm đã có trong giỏ hàng.");
+        return;
+      }
+      setMessage(err instanceof ApiError ? err.message : "Không thể thêm vào giỏ hàng.");
+    } finally {
+      setCartBusy(false);
+    }
+  };
+
+  const buyNow = async () => {
+    if (!product) return;
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+
+    setOrderBusy(true);
+    setMessage("");
+    try {
+      const res = await ordersApi.create({
+        productId: product.id,
+        shippingAddress: shippingAddress.trim() || undefined,
+        note: orderNote.trim() || undefined,
+      });
+      setProduct((current) => current ? { ...current, status: "SOLD", availabilityStatus: "sold" } : current);
+      setCartOn(false);
+      setMessage(`${res.message} Mã đơn: ${res.data.id}`);
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Không thể tạo đơn hàng.");
+      if (err instanceof ApiError && err.status === 409) {
+        setProduct((current) => current ? { ...current, status: "SOLD", availabilityStatus: "sold" } : current);
+      }
+    } finally {
+      setOrderBusy(false);
     }
   };
 
@@ -180,6 +260,7 @@ export default function ProductDetailPage() {
                         src={mainImage}
                         alt={product.title}
                         className="product-detail-img"
+                        loading="eager"
                         sizes="(max-width: 900px) 100vw, 56vw"
                       />
                     ) : (
@@ -210,6 +291,10 @@ export default function ProductDetailPage() {
                 <aside className="product-detail-panel">
                   <div className="product-detail-status-row">
                     <StatusBadge label={product.status} tone={productStatusTone(product.status)} />
+                    <StatusBadge
+                      label={AVAILABILITY_LABEL[product.availabilityStatus ?? "available"] ?? String(product.availabilityStatus)}
+                      tone={availabilityStatusTone(product.availabilityStatus)}
+                    />
                     <span className="product-detail-save-count">
                       <span className="material-symbols-outlined">favorite</span>
                       {product._count?.wishlistItems ?? 0} saved
@@ -266,9 +351,27 @@ export default function ProductDetailPage() {
                   )}
 
                   <div className="product-detail-actions">
-                    <PillButton type="button" tone="accent" disabled={!canBuy}>
+                    <div className="w-full grid gap-3 mb-2">
+                      <input
+                        className="admin-input"
+                        value={shippingAddress}
+                        onChange={(event) => setShippingAddress(event.target.value)}
+                        placeholder="Địa chỉ nhận hàng"
+                      />
+                      <textarea
+                        className="admin-textarea"
+                        value={orderNote}
+                        onChange={(event) => setOrderNote(event.target.value)}
+                        placeholder="Ghi chú cho seller"
+                      />
+                    </div>
+                    <PillButton type="button" tone="accent" disabled={!canBuy || orderBusy} onClick={buyNow}>
                       <span className="material-symbols-outlined text-[16px]">shopping_bag</span>
-                      {canBuy ? "Hold Item" : "Không khả dụng"}
+                      {canBuy ? (orderBusy ? "Đang tạo đơn..." : "Mua ngay") : "Hết hàng"}
+                    </PillButton>
+                    <PillButton type="button" tone="orange" disabled={!canBuy || cartBusy || cartOn} onClick={addToCart}>
+                      <span className="material-symbols-outlined text-[16px]">shopping_cart</span>
+                      {cartOn ? "Đã trong giỏ" : cartBusy ? "Đang thêm..." : "Thêm vào giỏ"}
                     </PillButton>
                     <PillButton type="button" tone="muted" disabled={wishlistBusy} onClick={toggleWishlist}>
                       <span
@@ -280,6 +383,9 @@ export default function ProductDetailPage() {
                       {wishlistOn ? "Đã lưu" : "Lưu wishlist"}
                     </PillButton>
                   </div>
+                  <p className="product-detail-cart-note">
+                    Giỏ hàng không giữ hàng. Khi người khác mua trước, sản phẩm trong giỏ sẽ chuyển sang hết hàng.
+                  </p>
                 </aside>
               </section>
 
