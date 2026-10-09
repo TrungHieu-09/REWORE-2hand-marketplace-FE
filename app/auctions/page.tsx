@@ -93,7 +93,7 @@ export default function LiveAuctionsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] pt-24">
+    <div className="min-h-screen bg-[#f7f4f0] pt-6">
       <main className="max-w-[1280px] mx-auto px-5 md:px-12 py-12 flex flex-col lg:flex-row gap-8">
         <div className="flex-1 min-w-0">
           <header className="mb-10 opacity-0 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>

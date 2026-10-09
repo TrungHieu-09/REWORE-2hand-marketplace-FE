@@ -1,6 +1,8 @@
 "use client";
 
-export type ProfileTab = "overview" | "bids" | "orders" | "settings";
+import { useHold } from "../../context/HoldContext";
+
+export type ProfileTab = "overview" | "bids" | "holds" | "orders" | "settings";
 
 interface ProfileTabNavProps {
   activeTab: ProfileTab;
@@ -8,9 +10,16 @@ interface ProfileTabNavProps {
 }
 
 export default function ProfileTabNav({ activeTab, onTabChange }: ProfileTabNavProps) {
-  const tabs: { id: ProfileTab; label: string }[] = [
+  const { heldItems } = useHold();
+
+  const tabs: { id: ProfileTab; label: string; count?: number }[] = [
     { id: "overview", label: "Overview" },
     { id: "bids", label: "My Bids" },
+    {
+      id: "holds",
+      label: heldItems.length > 0 ? `Đang giữ hàng (${heldItems.length})` : "Đang giữ hàng",
+      count: heldItems.length,
+    },
     { id: "orders", label: "Orders & Returns" },
     { id: "settings", label: "Account Settings" },
   ];

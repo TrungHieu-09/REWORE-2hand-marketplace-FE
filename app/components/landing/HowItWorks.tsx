@@ -1,7 +1,7 @@
 export default function HowItWorks() {
   const steps = [
-    { id: "step-discover", num: "01", icon: "search", title: "Discover", desc: "Explore curated drops and live auctions of unique vintage finds. Filter by era, brand, or condition.", link: "#drops", linkText: "Browse drops" },
-    { id: "step-secure", num: "02", icon: "lock", title: "Secure", desc: "Hold or bid on items using our integrated reservation system with buyer protection guarantee.", link: "#trust", linkText: "Learn more" },
+    { id: "step-discover", num: "01", icon: "search", title: "Discover", desc: "Explore curated drops and live auctions of unique vintage finds. Filter by era, brand, or condition.", link: "/shop", linkText: "Browse drops" },
+    { id: "step-secure", num: "02", icon: "lock", title: "Secure", desc: "Hold or bid on items using our integrated reservation system with buyer protection guarantee.", link: "/auctions", linkText: "Explore auctions" },
     { id: "step-trade", num: "03", icon: "handshake", title: "Trade", desc: "Transact safely with Trust Score verified members. Rate your experience and build your reputation.", link: "#trust", linkText: "See Trust Score" },
   ];
 
