@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 const orders = [
@@ -140,7 +142,10 @@ export default function RecentOrdersTable() {
                 </td>
                 <td className="py-4 px-4 text-[12px] text-[#655d52] whitespace-nowrap">{o.date}</td>
                 <td className="py-4 px-6 text-right whitespace-nowrap">
-                  <button className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-[#dbc1b9]/60 text-[#231a11] hover:bg-[#feeadc] transition-all">
+                  <button
+                    onClick={() => alert(`Đã kích hoạt thao tác "${o.action}" cho đơn hàng #${o.id} (${o.item})!`)}
+                    className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-[#dbc1b9]/60 text-[#231a11] hover:bg-[#feeadc] transition-all cursor-pointer"
+                  >
                     {o.action}
                   </button>
                 </td>
@@ -154,10 +159,16 @@ export default function RecentOrdersTable() {
       <div className="p-4 bg-[#fff1e8]/20 border-t border-[#ede1d2]/40 flex items-center justify-between">
         <span className="text-[12px] text-[#655d52]">Showing 4 of 28 recent orders this month</span>
         <div className="flex gap-2">
-          <button className="p-1 rounded border border-[#dbc1b9]/40 text-[#655d52] hover:bg-[#feeadc]">
+          <button
+            onClick={() => alert("Trang trước")}
+            className="p-1 rounded border border-[#dbc1b9]/40 text-[#655d52] hover:bg-[#feeadc] cursor-pointer"
+          >
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
-          <button className="p-1 rounded border border-[#dbc1b9]/40 text-[#655d52] hover:bg-[#feeadc]">
+          <button
+            onClick={() => alert("Trang sau")}
+            className="p-1 rounded border border-[#dbc1b9]/40 text-[#655d52] hover:bg-[#feeadc] cursor-pointer"
+          >
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
         </div>

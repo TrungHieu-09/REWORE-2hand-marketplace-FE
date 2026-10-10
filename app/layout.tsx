@@ -3,6 +3,7 @@ import { Playfair_Display, Manrope } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import { SellerProvider } from "./context/SellerContext";
+import { HoldProvider } from "./context/HoldContext";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -38,7 +39,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen">
         <AuthProvider>
-          <SellerProvider>{children}</SellerProvider>
+          <SellerProvider>
+            <HoldProvider>{children}</HoldProvider>
+          </SellerProvider>
         </AuthProvider>
       </body>
     </html>

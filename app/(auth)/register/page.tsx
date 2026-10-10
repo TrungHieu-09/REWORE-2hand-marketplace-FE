@@ -186,9 +186,21 @@ export default function RegisterPage() {
               />
               <span>
                 I agree to the{" "}
-                <a href="#" className="auth-link">Terms of Service</a>
+                <button
+                  type="button"
+                  onClick={() => alert("Điều khoản dịch vụ của REWORE: Tất cả giao dịch đồ secondhand được xác thực và bảo vệ quyền lợi người mua & người bán.")}
+                  className="auth-link cursor-pointer bg-transparent border-none p-0 underline text-inherit"
+                >
+                  Terms of Service
+                </button>
                 {" "}and{" "}
-                <a href="#" className="auth-link">Privacy Policy</a>
+                <button
+                  type="button"
+                  onClick={() => alert("Chính sách bảo mật của REWORE: Dữ liệu cá nhân của bạn luôn được mã hóa và bảo mật tối đa.")}
+                  className="auth-link cursor-pointer bg-transparent border-none p-0 underline text-inherit"
+                >
+                  Privacy Policy
+                </button>
               </span>
             </label>
             {error && (

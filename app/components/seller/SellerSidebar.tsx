@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { icon: "dashboard", label: "Dashboard", href: "/seller/dashboard" },
+  { icon: "shopping_bag", label: "Orders", href: "/seller/orders", badge: "4", badgeStyle: "count" },
   { icon: "inventory_2", label: "Inventory", href: "/seller/inventory" },
   { icon: "auto_awesome", label: "Drops", href: "/seller/drops", badge: "Live", badgeStyle: "live" },
   { icon: "gavel", label: "Auctions", href: "/seller/auctions", badge: "●", badgeStyle: "dot" },

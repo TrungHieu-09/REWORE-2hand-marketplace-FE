@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function SellerTopBar() {
   return (
     <header className="sticky top-0 z-40 bg-[#fff8f5] border-b border-[#dbc1b9]/30 flex justify-between items-center h-16 px-6">
@@ -21,13 +23,15 @@ export default function SellerTopBar() {
         <button
           className="relative p-2.5 rounded-full hover:bg-[#f2dfd1]/50 transition-all text-[#55433d] hover:text-[#231a11]"
           title="Notifications"
+          onClick={() => alert("You have 4 notifications pending your review.")}
         >
           <span className="material-symbols-outlined text-[20px]">notifications</span>
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#974226]" />
         </button>
 
         {/* Messages */}
-        <button
+        <Link
+          href="/messages"
           className="relative p-2.5 rounded-full hover:bg-[#f2dfd1]/50 transition-all text-[#55433d] hover:text-[#231a11]"
           title="Messages"
         >
@@ -35,12 +39,15 @@ export default function SellerTopBar() {
           <span className="absolute -top-0.5 -right-0.5 bg-[#974226] text-white text-[10px] font-bold h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center">
             3
           </span>
-        </button>
+        </Link>
 
         <div className="h-6 w-px bg-[#dbc1b9]/40 mx-1" />
 
         {/* Account */}
-        <button className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full hover:bg-[#f2dfd1]/50 transition-all">
+        <Link
+          href="/profile"
+          className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full hover:bg-[#f2dfd1]/50 transition-all"
+        >
           <div className="w-8 h-8 rounded-full bg-[#ffdbd0] border border-[#dbc1b9] flex items-center justify-center text-[#974226] font-bold text-xs">
             OS
           </div>
@@ -49,7 +56,7 @@ export default function SellerTopBar() {
             <span className="block text-[11px] text-[#88726c] leading-tight">Consignment Pro</span>
           </div>
           <span className="material-symbols-outlined text-[#88726c] text-[18px]">expand_more</span>
-        </button>
+        </Link>
       </div>
     </header>
   );
